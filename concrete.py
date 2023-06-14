@@ -2,8 +2,7 @@
 # Version 1.0
 
 from math import sqrt, copysign
-#from typing import overload
-test = 1
+from typing import overload
 
 diams = {
     # Nominal linear diameter of rebar per Appendix A
