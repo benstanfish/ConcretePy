@@ -216,11 +216,11 @@ def getAv_s(Vu, Vc, dDist, fyt: float = DEFAULT_FY, isEShear: bool = False):
     # Note that this function assumes phi = 0.75 per Table 21.2.1(b), unless isSeismicShear
     # is True, in which case phi = 0.60 per Sec. 21.2.4.1
     phiV = 0.75
-    if isEShear = True:
+    if isEShear == True:
         phiV = 0.6
     return (Vu-phiV*Vc)/(phiV*fyt*dDist)
 
-def DesignVn_1W(Vs, Vc, isEShear: bool = False):
+def getPhiVn_1W(Vs, Vc, isEShear: bool = False):
     """Returns phi*Vn for one-way shear, based Eq. (22.5.1.1) and Ch. 21 phi factors.
 
     Args:
@@ -229,7 +229,35 @@ def DesignVn_1W(Vs, Vc, isEShear: bool = False):
         isEShear (bool, optional): _description_. Defaults to False.
     """
     phiV = 0.75
-    if isEShear = True:
+    if isEShear == True:
         phiV = 0.6
     return phiV*(Vc+Vs)
 
+
+
+
+
+def getArea(coords):
+    """Return the area of a closed, simple ("non-self-intersecting") polygon based on x, y pairs
+
+    Args:
+        coords (list of coordinate lists): array of x,y pairs of coordinates of the polygon's vertices
+    """
+    cnt = len(coords)
+
+
+
+
+
+
+# coords = []
+# coords.append([1,6])
+# coords.append([3,1])
+# coords.append([7,2])
+# coords.append([4,4])
+# coords.append([8,5])
+# print(coords)
+# print(len(coords))
+# print(coords[2][1])
+# for elem in range(0, len(coords)):
+#     print(coords[elem])
