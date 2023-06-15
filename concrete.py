@@ -49,14 +49,14 @@ weights = {
     18: 13.6
 }
 
-defaultEs = 29000000    # Steel modulus of elasticity (Es) in psi per Sec. 20.2.2.2
-defaultFy = 60000       # Default steel yeild strength in psi (Grade 60 bar)
+defaultEs = 29000000.0    # Steel modulus of elasticity (Es) in psi per Sec. 20.2.2.2
+defaultFy = 60000.0       # Default steel yeild strength in psi (Grade 60 bar)
 defaultEcu = -0.003     # Default limit concrete strain. Negative strain == compression.
 
 def get_beta1(fprimec: float):
     """Returns beta1 value per Table 22.2.2.4.3
     
-    fprimec = 28-day concrete compression strength in psi"""
+    fprimec -- 28-day concrete compression strength in psi"""
     # If ksi units are provided, this function converts to psi
     if fprimec < 10:
         fprimec *= 1000
@@ -70,8 +70,8 @@ def get_beta1(fprimec: float):
 def get_c(aDist: float, beta1: float):
     """Returns neutral axis distance "c" per Eq. (22.2.2.4.1)
     
-    aDist = "a" distance in inches
-    beta1 = value per Table 22.2.2.4.3"""
+    aDist -- "a" distance in inches
+    beta1 -- value per Table 22.2.2.4.3"""
     return aDist/beta1
 
 def get_a(fprimec: float, bw: float, Astl: float, fy: float = defaultFy):
@@ -83,13 +83,13 @@ def get_a(fprimec: float, bw: float, Astl: float, fy: float = defaultFy):
     steelArea -- total area of steel
     steelStr -- steel strenght in psi, defaults to 60,000 psi"""
     # The factor 0.85f'c is the limit concrete stress per Sec. 22.2.2.4.1.
-    return Astl * fy / (0.85 * fprimec * bw)
+    return  fy * Astl / (0.85 * fprimec * bw)
 
 def get_Ec(fprimec: float, wc: float = None):
     """Returns concrete elastic modulus, Ec per Eq. (19.2.2.1.b) unless wc provided, then Eq. (19.2.2.1.a)
     
-    fprimec = 28-day concrete compression strength in psi
-    wc = concrete unit weight in lb/ft^3, between 90 and 160 pcf.
+    fprimec -- 28-day concrete compression strength in psi
+    wc -- concrete unit weight in lb/ft^3, between 90 and 160 pcf.
     
     Note that wc = 143.959593 pcf makes both equations approximately equal.
     """
@@ -114,7 +114,7 @@ def get_strain_at_d(dDist: float, cDist: float, ecu: float = defaultEcu):
     ecu = limit concrete strain of -0.003, per Sec. 22.2.2.1 (negative for compression)."""
     return ecu * (1 - dDist/cDist)
 
-def get_fy(fy: float = defaultFy, Es:float = defaultEs):
+def get_fy(fy: float = defaultFy, Es: float = defaultEs):
     """Returns the yield stress (fy) for a given steel strength (psi) and elastic modulus (psi)"""
     return fy/Es
 
@@ -132,9 +132,9 @@ def get_Vc(fprimec: float, bw: float, dDist: float, lam: float = 1):
     """Returns the shear strength Vc (lbf) for nonprestressed 
     members w/o axial forcce per Eq. (22.5.5.1)
 
-    fprimec = 28-day concrete compression strength (psi)
-    bw = member width in inches
-    dDist = distance to extreme tension steel layer in inches"""
+    fprimec -- 28-day concrete compression strength (psi)
+    bw -- member width in inches
+    dDist -- distance to extreme tension steel layer in inches"""
     return 2*lam*sqrt(fprimec)*bw*dDist
 
 def get_Vc_with_axial(
@@ -143,11 +143,11 @@ def get_Vc_with_axial(
     """Returns the shear strength Vc (lbf) for nonprestressed 
     members WITH axial force per Eq. (22.5.6.1) or (22.5.7.1) if 
     
-    fprimec = 28-day concrete compression strength (psi)
-    bw = member width in inches
-    dDist = distance to extreme tension steel layer in inches
-    Nu = axial force (lbf), where compression is positive, tension is negative
-    Ag = gross cross-sectional area (in^2)"""
+    fprimec -- 28-day concrete compression strength (psi)
+    bw -- member width in inches
+    dDist -- distance to extreme tension steel layer in inches
+    Nu -- axial force (lbf), where compression is positive, tension is negative
+    Ag -- gross cross-sectional area (in^2)"""
     denom = 2000
     if isSignificantTension == True:
         denom = 500
