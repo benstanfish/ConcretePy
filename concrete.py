@@ -55,23 +55,29 @@ DEFAULT_ECU = 0.003     # Default limit concrete strain. Negative strain == tens
 
 """ Arguments used:
 
-    aDist: the "a" distance (in)
-    Ag: gross cross-sectional area (in^2)
-    Astl: area of steel at a given layer (in^2)
-    betaOne: value of beta1 per Table 22.2.2.4.3 (unitless)
-    bw: member width (in)
-    cDist: the "c" neutral axis distance (in)
-    dDist: the "d" distance from compression fiber to steel layer (in)
-    ecu: limit concrete compression strain, typically 0.003 (in/in)
-    Es: modulus of elasticity of steel (psi)
-    fc: 28-day concrete compression strength (psi)
-    fy: steel yield strength (psi)
-    isSignificantTension: "judgement call" as to whether tension is "significant"
-    lam: lightweight concrete factor, lambda (unitless)
-    Nu: axial force (lbf), where compression is positive, tension is negative
-    strain: steel strain (in/in) at layer "d"
-    Vc: concrete shear strength (lbf)
-    wc: concrete unit weight (pcf)
+    aDist (float): the "a" distance (in)
+    Ag (float): gross cross-sectional area (in^2)
+    Astl (float): area of steel at a given layer (in^2)
+    Av (float): area of transverse steel (in^2)
+    betaOne (float): value of beta1 per Table 22.2.2.4.3 (unitless)
+    bw (float): member width (in)
+    cDist (float): the "c" neutral axis distance (in)
+    dDist (float): the "d" distance from compression fiber to steel layer (in)
+    ecu (float): limit concrete compression strain, typically 0.003 (in/in)
+    Es (float): modulus of elasticity of steel (psi)
+    fc (float): 28-day concrete compression strength (psi)
+    fy (float): steel yield strength (psi)
+    fyt (float): transverse steel yield strength (psi). Defaults to DEFAULT_FY.
+    isEShear (bool): is false unless shear from case described in Sec. 21.2.4.1
+    isSignificantTension (bool): "judgement call" as to whether tension is "significant"
+    lam (float): lightweight concrete factor, lambda (unitless)
+    Nu (float): axial force (lbf), where compression is positive, tension is negative
+    spacing (float): spacing of transverse steel (in)
+    strain (float): steel strain (in/in) at layer "d"
+    Vc (float): concrete shear strength (lbf)
+    Vs (float): nominal transverse steel shear strenght (lbf) per Eq. (23.5.10.5.3)
+    Vu (float): nominal shear demand (lbf)
+    wc (float): concrete unit weight (pcf)
 """
 
 def beta1(fc):
@@ -130,7 +136,7 @@ def ruptureModulus(fc, lam: float = 1):
         fc *= 1000
     return 7.5*lam*sqrt(fc)
 
-def getStrain(dDist, cDist, ecu: float = DEFAULT_ECU):
+def steelStrain(dDist, cDist, ecu: float = DEFAULT_ECU):
     """Returns the strain at layer "d" assuming similar triangles. Compression treated as positive.
     
     cDist: the "c" neutral axis distance (in)
@@ -169,20 +175,61 @@ def getVc(fc: float, bw: float, dDist: float, lam: float = 1):
     dDist: the "d" distance from compression fiber to steel layer (in)"""
     return 2*lam*sqrt(fc)*bw*dDist
 
-def getVcWithAxial(
+def getVc_WithAxial(
     fc: float, bw: float, dDist: float, 
     Nu: float, Ag: float, lam: float = 1, isSignificantTension:bool = False):
-    """Returns the shear strength Vc (lbf) for nonprestressed 
-    members WITH axial force per Eq. (22.5.6.1) or (22.5.7.1) if 
+    """Returns the shear strength Vc (lbf) for nonprestressed members WITH axial force per Eq. (22.5.6.1) or (22.5.7.1) if 
     
-    fc: 28-day concrete compression strength (psi)
-    bw: member width (in)
-    dDist: the "d" distance from compression fiber to steel layer (in)
-    Nu: axial force (lbf), where compression is positive, tension is negative
-    Ag: gross cross-sectional area (in^2)"""
+    Args:
+        fc: 28-day concrete compression strength (psi)
+        bw: member width (in)
+        dDist: the "d" distance from compression fiber to steel layer (in)
+        Nu: axial force (lbf), where compression is positive, tension is negative
+        Ag: gross cross-sectional area (in^2)"""
     denom = 2000
     if isSignificantTension == True:
         denom = 500
     Vc = 2*(1+Nu/(denom*Ag))*lam*sqrt(fc)*bw*dDist
     return max(Vc,0)
+
+def getVs(Av, spacing, dDist, fyt: float = DEFAULT_FY):
+    """Returns the nominal shear strength per Eq. (23.5.10.5.3)
+
+    Args:
+        Av (float): area of transverse steel (in^2)
+        spacing (float): spacing of transverse steel (in)
+        dDist (float): the "d" distance from compression fiber to steel layer (in)
+        fyt (float, optional): transverse steel yield strength (psi). Defaults to DEFAULT_FY.
+    """
+    return Av*fyt*dDist/spacing
+
+def getAv_s(Vu, Vc, dDist, fyt: float = DEFAULT_FY, isEShear: bool = False):
+    """Returns Av/s (in^2/in) per Eq. (R22.5.10.5) for direct shear
+
+    Args:
+        Vu (float): nominal shear demand (lbf)
+        Vc (float): concrete shear strength (lbf)
+        dDist (float): the "d" distance from compression fiber to steel layer (in)
+        fyt (float): transverse steel yield strength (psi). Defaults to DEFAULT_FY.
+        isEShear (bool): is false unless shear from case described in Sec. 21.2.4.1
+    """
+    # Note that this function assumes phi = 0.75 per Table 21.2.1(b), unless isSeismicShear
+    # is True, in which case phi = 0.60 per Sec. 21.2.4.1
+    phiV = 0.75
+    if isEShear = True:
+        phiV = 0.6
+    return (Vu-phiV*Vc)/(phiV*fyt*dDist)
+
+def DesignVn(Vs, Vc, isEShear: bool = False):
+    """Returns phi*Vn for one-way shear, based Eq. (22.5.1.1) and Ch. 21 phi factors.
+
+    Args:
+        Vs (float): nominal transverse steel shear strenght (lbf) per Eq. (23.5.10.5.3)
+        Vc (float): nominal one-way concrete shear strength (lbf)
+        isEShear (bool, optional): _description_. Defaults to False.
+    """
+    phiV = 0.75
+    if isEShear = True:
+        phiV = 0.6
+    return phiV*(Vc+Vs)
 
