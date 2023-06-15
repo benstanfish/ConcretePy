@@ -134,7 +134,7 @@ def get_Vc(fprimec: float, bw: float, dDist: float, lam: float = 1):
     fprimec = 28-day concrete compression strength (psi)
     bw = member width in inches
     dDist = distance to extreme tension steel layer in inches'''
-    return 2*lam*sqrt(fprimeC)*bw*d
+    return 2*lam*sqrt(fprimec)*bw*dDist
 
 def get_Vc_with_axial(
     fprimec: float, bw: float, dDist: float, 
@@ -152,3 +152,4 @@ def get_Vc_with_axial(
         denom = 500
     Vc = 2*(1+Nu/(denom*Ag))*lam*sqrt(fprimec)*bw*dDist
     return max(Vc,0)
+
