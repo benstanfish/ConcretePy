@@ -136,14 +136,19 @@ def get_Vc(fprimec: float, bw: float, dDist: float, lam: float = 1):
     dDist = distance to extreme tension steel layer in inches'''
     return 2*lam*sqrt(fprimeC)*bw*d
 
-def get_Vc_with_axial(fprimec: float, bw: float, dDist: float, Nu: float, Ag: float, lam: float = 1):
+def get_Vc_with_axial(
+    fprimec: float, bw: float, dDist: float, 
+    Nu: float, Ag: float, lam: float = 1, isSignificantTension:bool = False):
     '''Returns the shear strength Vc (lbf) for nonprestressed 
-    members WITH axial force per Eq. (22.5.6.1)
+    members WITH axial force per Eq. (22.5.6.1) or (22.5.7.1) if 
     
     fprimec = 28-day concrete compression strength (psi)
     bw = member width in inches
     dDist = distance to extreme tension steel layer in inches
-    Nu = axial force (lbf), where compression is positive
+    Nu = axial force (lbf), where compression is positive, tension is negative
     Ag = gross cross-sectional area (in^2)'''
-    return 2*(1+Nu/(2000*Ag))*lam*sqrt(fprimeC)*bw*d
-
+    denom = 2000
+    if isSignificantTension == True:
+        denom = 500
+    Vc = 2*(1+Nu/(denom*Ag))*lam*sqrt(fprimec)*bw*dDist
+    return max(Vc,0)
