@@ -100,7 +100,7 @@ def get_Ec(fprimec: float, wc: float = None):
     else:
         return (wc**1.5)*33*sqrt(fprimec)
 
-def get_fr(fprimec: float , lam: float = 1):
+def get_fr(fprimec: float, lam: float = 1):
     '''Returns modulus of rupture per Eq. (19.2.3.1). Note lambda per Table 19.2.4.2, defaults to lambda = 1 (NWC).'''
         # If ksi units are provided, this function converts to psi
     if fprimec < 10:
@@ -126,4 +126,24 @@ def get_fs(steelStrain: float, Es: float = defaultEs, fy: float = defaultFy):
         return copysign(steelStrain*Es,steelStrain)
     else:
         return copysign(fy,steelStrain)
+
+def get_Vc(fprimec: float, bw: float, dDist: float, lam: float = 1):
+    '''Returns the shear strength Vc (lbf) for nonprestressed 
+    members w/o axial forcce per Eq. (22.5.5.1)
+
+    fprimec = 28-day concrete compression strength (psi)
+    bw = member width in inches
+    dDist = distance to extreme tension steel layer in inches'''
+    return 2*lam*sqrt(fprimeC)*bw*d
+
+def get_Vc_with_axial(fprimec: float, bw: float, dDist: float, Nu: float, Ag: float, lam: float = 1):
+    '''Returns the shear strength Vc (lbf) for nonprestressed 
+    members WITH axial force per Eq. (22.5.6.1)
+    
+    fprimec = 28-day concrete compression strength (psi)
+    bw = member width in inches
+    dDist = distance to extreme tension steel layer in inches
+    Nu = axial force (lbf), where compression is positive
+    Ag = gross cross-sectional area (in^2)'''
+    return 2*(1+Nu/(2000*Ag))*lam*sqrt(fprimeC)*bw*d
 
