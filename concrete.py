@@ -220,7 +220,7 @@ def getAv_s(Vu, Vc, dDist, fyt: float = DEFAULT_FY, isEShear: bool = False):
         phiV = 0.6
     return (Vu-phiV*Vc)/(phiV*fyt*dDist)
 
-def DesignVn(Vs, Vc, isEShear: bool = False):
+def DesignVn_1W(Vs, Vc, isEShear: bool = False):
     """Returns phi*Vn for one-way shear, based Eq. (22.5.1.1) and Ch. 21 phi factors.
 
     Args:
