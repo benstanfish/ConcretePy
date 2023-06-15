@@ -139,7 +139,7 @@ def get_Vc(fprimec: float, bw: float, dDist: float, lam: float = 1):
 
 def get_Vc_with_axial(
     fprimec: float, bw: float, dDist: float, 
-    Nu: float, Ag: float, lam: float = 1, isSignificantTension:bool = False):
+    axialLoad: float, grossArea: float, lam: float = 1, isSignificantTension:bool = False):
     """Returns the shear strength Vc (lbf) for nonprestressed 
     members WITH axial force per Eq. (22.5.6.1) or (22.5.7.1) if 
     
@@ -151,7 +151,7 @@ def get_Vc_with_axial(
     denom = 2000
     if isSignificantTension == True:
         denom = 500
-    Vc = 2*(1+Nu/(denom*Ag))*lam*sqrt(fprimec)*bw*dDist
+    Vc = 2*(1+axialLoad/(denom*grossArea))*lam*sqrt(fprimec)*bw*dDist
     return max(Vc,0)
 
 
