@@ -77,10 +77,11 @@ def get_c(aDist: float, beta1: float):
 def get_a(fprimec: float, bw: float, Astl: float, fy: float = defaultFy):
     """Returns "a" distance, assuming fs >= fy
     
-    fprimec = 28-day concrete compression strength in psi
-    bw = width of member in inches
-    steelArea = total area of steel
-    steelStr = steel strenght in psi, defaults to 60,000 psi"""
+    fprimec -- 28-day concrete compression strength in psi
+    bw -- width of member in inches
+    Astl -- area of steel in sq. in.
+    steelArea -- total area of steel
+    steelStr -- steel strenght in psi, defaults to 60,000 psi"""
     # The factor 0.85f'c is the limit concrete stress per Sec. 22.2.2.4.1.
     return Astl * fy / (0.85 * fprimec * bw)
 
