@@ -62,6 +62,7 @@ DEFAULT_ECU = 0.003     # Default limit concrete strain. Negative strain == tens
     betaOne (float): value of beta1 per Table 22.2.2.4.3 (unitless)
     bw (float): member width (in)
     cDist (float): the "c" neutral axis distance (in)
+    coords: list of [x, y] lists of coordinates of the polygon's vertices
     dDist (float): the "d" distance from compression fiber to steel layer (in)
     ecu (float): limit concrete compression strain, typically 0.003 (in/in)
     Es (float): modulus of elasticity of steel (psi)
@@ -233,31 +234,40 @@ def getPhiVn_1W(Vs, Vc, isEShear: bool = False):
         phiV = 0.6
     return phiV*(Vc+Vs)
 
-
-
-
-
-def getArea(coords):
-    """Return the area of a closed, simple ("non-self-intersecting") polygon based on x, y pairs
+def area(coords):
+    """Return the area of a closed, simple ("non-self-intersecting") 
+    polygon based on x, y pairs; uses the trapezoid formula.
 
     Args:
-        coords (list of coordinate lists): array of x,y pairs of coordinates of the polygon's vertices
+        coords: list of [x, y] lists of coordinates of the polygon's vertices
     """
-    cnt = len(coords)
+    # https://en.wikipedia.org/wiki/Shoelace_formula#Trapezoid_formula
+    # Example: coords = [[-2, -2], [11, 2], [9, 7], [4, 10]] --> 75.5
+    arr = coords.copy()     # Deep copy the coordiante array for the next step
+    arr.append(coords[0])   # Copy the first indice to the end for later operations
+    A = 0
+    for i in range(0,len(arr)-1):
+        A += 0.5*(arr[i][0]*arr[i+1][1]-arr[i+1][0]*arr[i][1])
+    return abs(A)
 
+def centroid(coords):
+    """Return the centroid of a closed, simple ("non-self-intersecting") 
+    polygon based on x, y pairs; uses a variation of the trapezoid formula.
 
-
-
-
-
-# coords = []
-# coords.append([1,6])
-# coords.append([3,1])
-# coords.append([7,2])
-# coords.append([4,4])
-# coords.append([8,5])
-# print(coords)
-# print(len(coords))
-# print(coords[2][1])
-# for elem in range(0, len(coords)):
-#     print(coords[elem])
+    Args:
+        coords: list of [x, y] lists of coordinates of the polygon's vertices
+    """
+    # Example: coords = [[-2, -2], [11, 2], [9, 7], [4, 10]] --> 75.5
+    # https://en.wikipedia.org/wiki/Centroid#Of_a_polygon
+    arr = coords.copy()     # Deep copy the coordiante array for the next step
+    arr.append(coords[0])   # Copy the first indice to the end for later operations
+    cgX = 0
+    cgY = 0
+    area = 0
+    for i in range(0,len(arr)-1):
+        area += 0.5*(arr[i][0] * arr[i+1][1] - arr[i+1][0] * arr[i][1])
+    area = abs(area)
+    for i in range(0,len(arr)-1):
+        cgX += (arr[i][0]+arr[i+1][0])*(arr[i][0]*arr[i+1][1]-arr[i+1][0]*arr[i][1])/6/area
+        cgY += (arr[i][1]+arr[i+1][1])*(arr[i][0]*arr[i+1][1]-arr[i+1][0]*arr[i][1])/6/area
+    return [cgX, cgY, area]
