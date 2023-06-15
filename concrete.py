@@ -51,7 +51,7 @@ WEIGHTS = {
 
 DEFAULT_ES = 29000000.0    # Steel modulus of elasticity (Es) in psi per Sec. 20.2.2.2
 DEFAULT_FY = 60000.0       # Default steel yeild strength in psi (Grade 60 bar)
-DEFAULT_ECU = -0.003     # Default limit concrete strain. Negative strain == compression.
+DEFAULT_ECU = 0.003     # Default limit concrete strain. Negative strain == tension.
 
 """
     Arguments:
@@ -187,7 +187,3 @@ def getVcWithAxial(
     Vc = 2*(1+Nu/(denom*Ag))*lam*sqrt(fc)*bw*dDist
     return max(Vc,0)
 
-
-
-
-print(getVc(4000,12,24,1))
