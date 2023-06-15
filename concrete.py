@@ -188,3 +188,6 @@ def getVcWithAxial(
     return max(Vc,0)
 
 
+
+
+print(getVc(4000,12,24,1))
