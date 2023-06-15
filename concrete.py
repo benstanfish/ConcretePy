@@ -53,8 +53,7 @@ DEFAULT_ES = 29000000.0    # Steel modulus of elasticity (Es) in psi per Sec. 20
 DEFAULT_FY = 60000.0       # Default steel yeild strength in psi (Grade 60 bar)
 DEFAULT_ECU = 0.003     # Default limit concrete strain. Negative strain == tension.
 
-"""
-    Arguments:
+""" Arguments used:
 
     aDist: the "a" distance (in)
     Ag: gross cross-sectional area (in^2)
