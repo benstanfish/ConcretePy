@@ -4,6 +4,7 @@
 
 from math import sqrt, copysign
 import csv
+from tkinter.filedialog import askopenfilename
 
 DIAMS = {
     # Nominal linear diameter of rebar per Appendix A
@@ -298,8 +299,9 @@ def centroid(coords):
 #         arr.append(row)
 #     print(arr)
 
-def readlines():
-    with open('points.csv', 'r') as data:
+def readcoordsfromfile():
+    path = askopenfilename()
+    with open(path, 'r') as data:
         reader = csv.reader(data)
         for row in reader:
             yield [ float(i) for i in row ]
@@ -308,7 +310,8 @@ def readlines():
 #     print(i)
 
 # to get a list, instead of a generator, use
-xy = list(readlines())
+xy = list(readcoordsfromfile())
 
-arr = centroid(xy)
-print(arr[2])
+print(centroid(xy))
+
+
