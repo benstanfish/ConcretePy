@@ -311,7 +311,12 @@ def readcoordsfromfile():
 
 # to get a list, instead of a generator, use
 xy = list(readcoordsfromfile())
+cg = centroid(xy)
 
-print(centroid(xy))
-
-
+print(xy)
+cgx = f"The X Centroid is at: {cg[0]}"
+cgy = f"The y Centroid is at: {cg[1]}"
+area = f"The area is {cg[2]}"
+print(cgx)
+print(cgy)
+print(area)
