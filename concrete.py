@@ -298,16 +298,17 @@ def centroid(coords):
 #         arr.append(row)
 #     print(arr)
 
-def read_lines():
-    with open('points.csv', 'rU') as data:
+def readlines():
+    with open('points.csv', 'r') as data:
         reader = csv.reader(data)
         for row in reader:
             yield [ float(i) for i in row ]
 
-for i in read_lines():
-    print(i)
+# for i in read_lines():
+#     print(i)
 
 # to get a list, instead of a generator, use
-xy = list(read_lines())
+xy = list(readlines())
 
-print(centroid(xy))
+arr = centroid(xy)
+print(arr[2])
