@@ -3,6 +3,7 @@
 # Version 1.0
 
 from math import sqrt, copysign
+import csv
 
 DIAMS = {
     # Nominal linear diameter of rebar per Appendix A
@@ -271,3 +272,33 @@ def centroid(coords):
         cgX += (arr[i][0]+arr[i+1][0])*(arr[i][0]*arr[i+1][1]-arr[i+1][0]*arr[i][1])/6/area
         cgY += (arr[i][1]+arr[i+1][1])*(arr[i][0]*arr[i+1][1]-arr[i+1][0]*arr[i][1])/6/area
     return [cgX, cgY, area]
+
+
+
+
+# with open('points.csv', newline='') as csvfile:
+#     myReader = csv.reader(csvfile, delimiter=" ", quotechar="|")
+#     for row in myReader:
+#         print(', '.join(row))
+
+
+# with open('points.csv', "r", newline='\n') as csvfile:
+#     myReader = csv.reader(csvfile, delimiter=' ')
+#     arr = []
+#     for row in myReader:
+#         arr.append(row)
+#     print(arr)
+
+def read_lines():
+    with open('points.csv', 'rU') as data:
+        reader = csv.reader(data)
+        for row in reader:
+            yield [ float(i) for i in row ]
+
+for i in read_lines():
+    print(i)
+
+# to get a list, instead of a generator, use
+xy = list(read_lines())
+
+print(centroid(xy))
