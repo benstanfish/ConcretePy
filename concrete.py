@@ -235,6 +235,12 @@ def getPhiVn_1W(Vs, Vc, isEShear: bool = False):
         phiV = 0.6
     return phiV*(Vc+Vs)
 
+
+
+
+
+
+
 def area(coords):
     """Return the area of a closed, simple ("non-self-intersecting") 
     polygon based on x, y pairs; uses the trapezoid formula.
@@ -272,6 +278,9 @@ def centroid(coords):
         cgX += (arr[i][0]+arr[i+1][0])*(arr[i][0]*arr[i+1][1]-arr[i+1][0]*arr[i][1])/6/area
         cgY += (arr[i][1]+arr[i+1][1])*(arr[i][0]*arr[i+1][1]-arr[i+1][0]*arr[i][1])/6/area
     return [cgX, cgY, area]
+
+
+# Further Research: https://www.spatialanalysisonline.com/HTML/centroids_and_centers.htm
 
 
 
