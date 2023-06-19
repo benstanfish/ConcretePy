@@ -6,3 +6,13 @@ __credits__ = ["Ben Fisher"]
 __status__ = "Development"
 __maintainer__ "Ben Fisher"
 
+import numpy as np
+
+class simple_beam:
+    def __init__(self, length):
+        self.unitL = np.arange(0,1.01,0.01)
+        self.x = length * unitL
+
+
+    
+
