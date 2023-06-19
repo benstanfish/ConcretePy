@@ -1,6 +1,10 @@
 """Library of concrete-related functions based on the ACI 318"""
-# Created by Ben Fisher, 2023
-# Version 1.0
+__author__ = "Ben Fisher"
+__version__ = "0.0.3"
+__license__ = "GPL"
+__credits__ = ["Ben Fisher"]
+__status__ = "Development"
+__maintainer__ "Ben Fisher"
 
 from math import sqrt, copysign
 import csv
