@@ -284,48 +284,5 @@ def centroid(coords):
         cgY += (arr[i][1]+arr[i+1][1])*(arr[i][0]*arr[i+1][1]-arr[i+1][0]*arr[i][1])/6/area
     return [cgX, cgY, area]
 
-
 # Further Research: https://www.spatialanalysisonline.com/HTML/centroids_and_centers.htm
 
-def readcoordsfromfile():
-    path = askopenfilename()
-    with open(path, 'r') as data:
-        reader = csv.reader(data)
-        for row in reader:
-            yield [ float(i) for i in row ]
-
-xy = list(readcoordsfromfile())
-print(xy)
-
-cg = centroid(xy)
-cgx = f"The X Centroid is at: {cg[0]}"
-cgy = f"The y Centroid is at: {cg[1]}"
-area = f"The area is {cg[2]}"
-print(cgx)
-print(cgy)
-print(area)
-
-import matplotlib.pyplot as plt
-import numpy as np
-
-plt.style.use('_mpl-gallery')
-
-# make data
-a = np.array(xy)
-x = [item[0] for item in xy]
-y = [item[1] for item in xy]
-cg = centroid(xy)
-print(np.min(x))
-print(np.max(x))
-
-x.append(x[0])
-y.append(y[0])
-
-fig, ax = plt.subplots()
-
-ax.plot(x, y, linewidth=2.0)
-
-ax.set(xlim=(np.min(x) - 2, np.max(x) + 2), xticks=np.arange(np.min(x) - 2, np.max(x) + 2),
-       ylim=(np.min(y) - 2, np.max(y) + 2), yticks=np.arange(np.min(y) - 2, np.max(y) + 2))
-
-plt.show()
