@@ -45,9 +45,5 @@ class Distr_Load():
             c (float, optional): Distance from load to right support. Defaults to 0.0.
         """
         self.unitL = np.arange(0,1+1/_STATIONS,1/_STATIONS)
-        self.mag = mag
-        self.a = a
-        self.b = b
-        self.c = c
         self.W = np.copy(self.unitL)
-        self.W = np.where((self.W >= a) & (self.W <= 1 - self.c),mag,0)
+        self.W = np.where((self.W >= a) & (self.W <= 1 - c),mag,0)
