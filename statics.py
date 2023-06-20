@@ -47,3 +47,13 @@ class Distr_Load():
         self.unitL = np.arange(0,1+1/_STATIONS,1/_STATIONS)
         self.W = np.copy(self.unitL)
         self.W = np.where((self.W >= a) & (self.W <= 1 - c),mag,0)
+        
+class SimpleUniform():
+    def __init__(self, magnitude, length):
+        unitL = np.arange(0,1+1/_STATIONS,1/_STATIONS)
+        self.unitL = unitL
+        self.x = unitL*length
+        self.w = magnitude
+        self.length = length
+        self.R1 = self.R2 = magnitude * length / 2
+        self.V = magnitude * (length/2 - self.x)
