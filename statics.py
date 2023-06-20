@@ -1,6 +1,6 @@
 """Library of structural statics-related functions"""
 __author__ = "Ben Fisher"
-__version__ = "0.0.21"
+__version__ = "0.0.22"
 __license__ = "GPL"
 __credits__ = ["Ben Fisher"]
 __status__ = "Development"
@@ -27,7 +27,7 @@ class Beam(Unit_Beam):
         self.length = length
         self.x = length * self.unitL
         self.stations = self.x.size
-        
+
 class Load_DistrZero():
     def __init__(self, mag = 0):
         self.W = np.full([1,_STATIONS],mag)
