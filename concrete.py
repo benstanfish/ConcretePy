@@ -4,7 +4,7 @@ __version__ = "0.0.3"
 __license__ = "GPL"
 __credits__ = ["Ben Fisher"]
 __status__ = "Development"
-__maintainer__ "Ben Fisher"
+__maintainer__ = "Ben Fisher"
 
 from math import sqrt, copysign
 import csv
