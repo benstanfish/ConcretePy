@@ -47,3 +47,19 @@ def get_Av_s(Vu, Vc, d, steel: materials.SteelMaterial,
     except ZeroDivisionError:
         return 0
 
+
+
+
+
+# Shear wall methods
+def get_ac(hw: float, lw: float):
+    # Alpha_c per ACI 318 Sec. 18.10.4.1
+    try:
+        if hw/lw <= 1.5:
+            return 3
+        elif hw/lw >= 2.0:
+            return 2
+        else:
+            return 3 - 2 * (hw/lw - 1.5)
+    except ZeroDivisionError:
+        return 0
