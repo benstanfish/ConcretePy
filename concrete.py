@@ -10,82 +10,82 @@ from math import sqrt, copysign
 import csv
 from tkinter.filedialog import askopenfilename
 
-DIAMS = {
-    # Nominal linear diameter of rebar per Appendix A
-    3: 0.375,
-    4: 0.500,
-    5: 0.625,
-    6: 0.750,
-    7: 0.875,
-    8: 1.000,
-    9: 1.128,
-    10: 1.270,
-    11: 1.410,
-    14: 1.693,
-    18: 2.257
-}
+# DIAMS = {
+#     # Nominal linear diameter of rebar per Appendix A
+#     3: 0.375,
+#     4: 0.500,
+#     5: 0.625,
+#     6: 0.750,
+#     7: 0.875,
+#     8: 1.000,
+#     9: 1.128,
+#     10: 1.270,
+#     11: 1.410,
+#     14: 1.693,
+#     18: 2.257
+# }
 
-AREAS = {
-    # Nominal cross-sectional area of rebar per Appendix A
-    3: 0.11,
-    4: 0.20,
-    5: 0.31,
-    6: 0.44,
-    7: 0.60,
-    8: 0.79,
-    9: 1.00,
-    10: 1.27,
-    11: 1.56,
-    14: 2.25,
-    18: 4.00
-}
+# AREAS = {
+#     # Nominal cross-sectional area of rebar per Appendix A
+#     3: 0.11,
+#     4: 0.20,
+#     5: 0.31,
+#     6: 0.44,
+#     7: 0.60,
+#     8: 0.79,
+#     9: 1.00,
+#     10: 1.27,
+#     11: 1.56,
+#     14: 2.25,
+#     18: 4.00
+# }
 
-WEIGHTS = {
-    # Nominal linear weight of rebar per Appendix A
-    3: 0.376,
-    4: 0.668,
-    5: 1.043,
-    6: 1.503,
-    7: 2.044,
-    8: 2.67,
-    9: 3.4,
-    10: 4.303,
-    11: 5.313,
-    14: 7.65,
-    18: 13.6
-}
+# WEIGHTS = {
+#     # Nominal linear weight of rebar per Appendix A
+#     3: 0.376,
+#     4: 0.668,
+#     5: 1.043,
+#     6: 1.503,
+#     7: 2.044,
+#     8: 2.67,
+#     9: 3.4,
+#     10: 4.303,
+#     11: 5.313,
+#     14: 7.65,
+#     18: 13.6
+# }
 
-DEFAULT_ES = 29000000.0    # Steel modulus of elasticity (Es) in psi per Sec. 20.2.2.2
-DEFAULT_FY = 60000.0       # Default steel yeild strength in psi (Grade 60 bar)
-DEFAULT_ECU = 0.003     # Default limit concrete strain. Negative strain == tension.
+# DEFAULT_ES = 29000000.0    # Steel modulus of elasticity (Es) in psi per Sec. 20.2.2.2
+# DEFAULT_FY = 60000.0       # Default steel yeild strength in psi (Grade 60 bar)
+# DEFAULT_ECU = 0.003     # Default limit concrete strain. Negative strain == tension.
 
-""" Arguments used:
+# """ Arguments used:
 
-    aDist (float): the "a" distance (in)
-    Ag (float): gross cross-sectional area (in^2)
-    Astl (float): area of steel at a given layer (in^2)
-    Av (float): area of transverse steel (in^2)
-    betaOne (float): value of beta1 per Table 22.2.2.4.3 (unitless)
-    bw (float): member width (in)
-    cDist (float): the "c" neutral axis distance (in)
-    coords: list of [x, y] lists of coordinates of the polygon's vertices
-    dDist (float): the "d" distance from compression fiber to steel layer (in)
-    ecu (float): limit concrete compression strain, typically 0.003 (in/in)
-    Es (float): modulus of elasticity of steel (psi)
-    fc (float): 28-day concrete compression strength (psi)
-    fy (float): steel yield strength (psi)
-    fyt (float): transverse steel yield strength (psi). Defaults to DEFAULT_FY.
-    isEShear (bool): is false unless shear from case described in Sec. 21.2.4.1
-    isSignificantTension (bool): "judgement call" as to whether tension is "significant"
-    lam (float): lightweight concrete factor, lambda (unitless)
-    Nu (float): axial force (lbf), where compression is positive, tension is negative
-    spacing (float): spacing of transverse steel (in)
-    strain (float): steel strain (in/in) at layer "d"
-    Vc (float): concrete shear strength (lbf)
-    Vs (float): nominal transverse steel shear strenght (lbf) per Eq. (23.5.10.5.3)
-    Vu (float): nominal shear demand (lbf)
-    wc (float): concrete unit weight (pcf)
-"""
+#     aDist (float): the "a" distance (in)
+#     Ag (float): gross cross-sectional area (in^2)
+#     Astl (float): area of steel at a given layer (in^2)
+#     Av (float): area of transverse steel (in^2)
+#     betaOne (float): value of beta1 per Table 22.2.2.4.3 (unitless)
+#     bw (float): member width (in)
+#     cDist (float): the "c" neutral axis distance (in)
+#     coords: list of [x, y] lists of coordinates of the polygon's vertices
+#     dDist (float): the "d" distance from compression fiber to steel layer (in)
+#     ecu (float): limit concrete compression strain, typically 0.003 (in/in)
+#     Es (float): modulus of elasticity of steel (psi)
+#     fc (float): 28-day concrete compression strength (psi)
+#     fy (float): steel yield strength (psi)
+#     fyt (float): transverse steel yield strength (psi). Defaults to DEFAULT_FY.
+#     isEShear (bool): is false unless shear from case described in Sec. 21.2.4.1
+#     isSignificantTension (bool): "judgement call" as to whether tension is "significant"
+#     lam (float): lightweight concrete factor, lambda (unitless)
+#     Nu (float): axial force (lbf), where compression is positive, tension is negative
+#     spacing (float): spacing of transverse steel (in)
+#     strain (float): steel strain (in/in) at layer "d"
+#     Vc (float): concrete shear strength (lbf)
+#     Vs (float): nominal transverse steel shear strenght (lbf) per Eq. (23.5.10.5.3)
+#     Vu (float): nominal shear demand (lbf)
+#     wc (float): concrete unit weight (pcf)
+# """
 
 def beta1(fc):
     """Calculate the value of beta1 per Table 22.2.2.4.3
