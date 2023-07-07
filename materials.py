@@ -44,10 +44,18 @@ bar_weights = {
     18: 13.6
 }
 
-
-class ConcreteMaterial:
+class Concrete_Material:
     def __int__(self, fc, lam=1.0):
         self.fc = fc                    # Min 28-day strength (psi)
         self.Ec = 57000*sqrt(self.fc)   # Elastic modulus (psi)
         self.fr = 7.5*lam*sqrt(fc)      # Modulus of rupture (psi)
         self.lam = lam                  # Lightweight concrete factor lambda
+        self.ecu = 0.003                # Crushing strain
+        
+class Steel_Material:
+    def __init__(self, fy):
+        self.fy = fy                    # Mim steel yield stress (psi)
+        self.Es = 29000000              # Elastic modulus (psi)
+        self.ey = self.fy/self.Es       # Steel yield strain
+        
+    
