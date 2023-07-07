@@ -1,10 +1,11 @@
 from math import sqrt
+from typing import List, Union, Any, Dict
 
 # default properties for US materials using ACI 318 and imperial units
 
 # reinforcement values per ACI 318, Appendix A
-bar_numbers = [3,4,5,6,7,8,9,10,11,14,18]
-bar_diameters = {
+bar_numbers: List[Union[int, Any]] = [3, 4, 5, 6, 7, 8, 9, 10, 11, 14, 18]
+bar_diameters: Dict[Union[int, Any], Union[float, Any]] = {
     3: 0.375,
     4: 0.500,
     5: 0.625,
@@ -17,7 +18,7 @@ bar_diameters = {
     14: 1.693,
     18: 2.257
 }
-bar_areas = {
+bar_areas: Dict[Union[int, Any], Union[float, Any]] = {
     3: 0.11,
     4: 0.20,
     5: 0.31,
@@ -30,7 +31,7 @@ bar_areas = {
     14: 2.25,
     18: 4.00
 }
-bar_weights = {
+bar_weights: Dict[Union[int, Any], Union[float, Any]] = {
     3: 0.376,
     4: 0.668,
     5: 1.043,
@@ -44,28 +45,27 @@ bar_weights = {
     18: 13.6
 }
 
-class Concrete_Material:
+class ConcreteMaterial:
     def __init__(self, fc, lam=1.0):
-        self.fc = fc                    # Min 28-day strength (psi)
-        self.lam = lam                  # LWC factor lambda
-        self.ecu = 0.003                # Crushing strain
-        self.Ec = 57000*sqrt(self.fc)   # Elastic modulus (psi)
-        self.fr = 7.5*lam*sqrt(fc)      # Modulus of rupture (psi)
-        self.b1 = self.beta1()
-        
+        self.fc = fc  # Min 28-day strength (psi)
+        self.lam = lam  # LWC factor lambda
+        self.ecu = 0.003  # Crushing strain
+        self.Ec = 57000 * sqrt(self.fc)  # Elastic modulus (psi)
+        self.fr = 7.5 * lam * sqrt(fc)  # Modulus of rupture (psi)
+        self.b1 = self.beta1
+
+    @property
     def beta1(self):
         if self.fc <= 4000:
             return 0.85
         elif self.fc >= 8000:
             return 0.65
         else:
-            return 0.85 - 0.05*(self.fc - 4000)/1000
-        
-               
-class Steel_Material:
+            return 0.85 - 0.05 * (self.fc - 4000) / 1000
+
+
+class SteelMaterial:
     def __init__(self, fy):
-        self.fy = fy                    # Mim steel yield stress (psi)
-        self.Es = 29000000              # Elastic modulus (psi)
-        self.ey = self.fy/self.Es       # Steel yield strain
-        
-    
+        self.fy = fy  # Mim steel yield stress (psi)
+        self.Es = 29000000  # Elastic modulus (psi)
+        self.ey = self.fy / self.Es  # Steel yield strain
