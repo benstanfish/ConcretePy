@@ -1,7 +1,8 @@
 /__pycache__
 *.csv
-
+*.ipynb
 archive.py
 concplot.py
 
 !Module Test Template.ipynb
+!dev/
