@@ -1,7 +1,7 @@
 import materials
 from math import sqrt, copysign, abs
 
-def get_a(bw, Astl, concrete: materials.ConcreteMaterial, steel: materials.SteelMaterial):
+def get_a(bw, Astl, concrete: materials.ConcreteMaterial, steel: materials.RebarMaterial):
     try:
         return steel.fy * Astl / (0.85 * concrete.fc * bw)
     except ZeroDivisionError:
@@ -13,7 +13,7 @@ def get_c_from_a(a, concrete: materials.ConcreteMaterial):
     except ZeroDivisionError:
         return 0
 
-def get_c_from_Z(z, d, concrete: materials.ConcreteMaterial, steel: materials.SteelMaterial):
+def get_c_from_Z(z, d, concrete: materials.ConcreteMaterial, steel: materials.RebarMaterial):
     try:
         return d / (1 - z * steel.ey / concrete.ecu)
     except ZeroDivisionError:
@@ -31,7 +31,7 @@ def get_es(c, d, concrete: materials.ConcreteMaterial):
     except ZeroDivisionError:
         return 0
 
-def get_fs(strain: float, steel: materials.SteelMaterial):
+def get_fs(strain: float, steel: materials.RebarMaterial):
     if abs(strain/steel.ey) < 1:
         return copysign(strain*steel.Es,strain)
     else:

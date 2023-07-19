@@ -64,7 +64,7 @@ class ConcreteMaterial:
             return 0.85 - 0.05 * (self.fc - 4000) / 1000
 
 
-class SteelMaterial:
+class RebarMaterial:
     def __init__(self, fy = 60000):
         self.fy = fy  # Mim steel yield stress (psi)
         self.Es = 29000000  # Elastic modulus (psi)
