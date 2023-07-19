@@ -1,5 +1,5 @@
 import materials
-from math import sqrt, copysign
+from math import sqrt, copysign, abs
 
 def get_a(bw, Astl, concrete: materials.ConcreteMaterial,
           steel: materials.SteelMaterial):
@@ -11,6 +11,18 @@ def get_a(bw, Astl, concrete: materials.ConcreteMaterial,
 def get_c(a, concrete: materials.ConcreteMaterial):
     try:
         return a / concrete.b1
+    except ZeroDivisionError:
+        return 0
+
+def get_c_from_Z(z, d, concrete: materials.ConcreteMaterial, steel: materials.SteelMaterial):
+    try:
+        return d / (1 - z * steel.ey / concrete.ecu)
+    except ZeroDivisionError:
+        return 0
+
+def get_c_from_d(es, d, concrete: materials.ConcreteMaterial):
+    try:
+        return d / (1 - es / concrete.ecu)
     except ZeroDivisionError:
         return 0
 
@@ -47,10 +59,6 @@ def get_Av_s(Vu, Vc, d, steel: materials.SteelMaterial,
     except ZeroDivisionError:
         return 0
 
-
-
-
-
 # Shear wall methods
 def get_ac(hw: float, lw: float):
     # Alpha_c per ACI 318 Sec. 18.10.4.1
@@ -63,3 +71,10 @@ def get_ac(hw: float, lw: float):
             return 3 - 2 * (hw/lw - 1.5)
     except ZeroDivisionError:
         return 0
+
+
+
+
+
+
+# PM Methods
