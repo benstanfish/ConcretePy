@@ -65,7 +65,7 @@ class ConcreteMaterial:
 
 
 class SteelMaterial:
-    def __init__(self, fy):
+    def __init__(self, fy = 60000):
         self.fy = fy  # Mim steel yield stress (psi)
         self.Es = 29000000  # Elastic modulus (psi)
         self.ey = self.fy / self.Es  # Steel yield strain
