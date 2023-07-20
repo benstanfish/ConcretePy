@@ -1,6 +1,6 @@
 import numpy as np
 import materials
-from math import sqrt, copysign, abs
+from math import abs
 
 # def get_a(bw, Astl, concrete: materials.ConcreteMaterial, steel: materials.RebarMaterial):
 #     try:
@@ -49,7 +49,7 @@ def maximumCompression(Ag, layer_areas, concrete: materials.ConcreteMaterial, re
 
 def cFromZ(Z, d, concrete: materials.ConcreteMaterial, rebar: materials.RebarMaterial):
     try:
-        return concrete.ecu/(concrete.ecu + Z * rebar.ey)*d
+        return concrete.ecu/(concrete.ecu - Z * rebar.ey)*d
     except ZeroDivisionError:
         return 0
     
