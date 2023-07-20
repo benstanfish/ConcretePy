@@ -1,6 +1,5 @@
 import numpy as np
 import materials
-from math import abs
 
 # def get_a(bw, Astl, concrete: materials.ConcreteMaterial, steel: materials.RebarMaterial):
 #     try:
