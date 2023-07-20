@@ -1,5 +1,6 @@
 import numpy as np
 import materials
+from math import copysign
 
 # def get_a(bw, Astl, concrete: materials.ConcreteMaterial, steel: materials.RebarMaterial):
 #     try:
@@ -103,3 +104,41 @@ def PMPoints(c, bw, h, layer_distances, layer_areas, concrete: materials.Concret
     M = Mc + sum_Ms
     return P, M
 
+def getZfromP(Za, Zb, PDiff, bw, h, layer_distances, layer_areas, concrete: materials.ConcreteMaterial, rebar: materials.RebarMaterial):
+    """Return Z for a given P value (PDiff), given two bounding Z values (Za and Zb)
+
+    Args:
+        Za (_type_): lower bound Z
+        Zb (_type_): upper bound Z
+        PDiff (_type_): axial demand (compression is positive)
+    """
+    
+    minTol = 0.0000000001
+    maxIter = 100
+    keepRunning = True
+    n = 0
+    d = max(layer_distances)
+    tol = (Zb - Za) / 2
+    
+    while keepRunning == True:
+        ca = cFromZ(Za, d, concrete, rebar)
+        #cb = cFromZ(Zb, d, concrete, rebar)
+        Pa = PMPoints(ca, bw, h, layer_distances, layer_areas, concrete, rebar)[0] - PDiff
+        #Pb = PMPoints(cb, bw, h, layer_distances, layer_areas, concrete, rebar)[0] - PDiff
+
+        Zc = (Za + Zb) / 2
+        cc = cFromZ(Zc, d, concrete, rebar)
+        Pc = PMPoints(cc, bw, h, layer_distances, layer_areas, concrete, rebar)[0] - PDiff 
+
+        if abs(Pc) == 0:
+            return Zc
+        elif np.sign(Pc) ==  np.sign(Pa):
+            Za = Zc
+        else:
+            Zb = Zc
+        
+        tol = (Zb - Za) / 2
+        n += 1
+        if n == maxIter or tol < minTol:
+            keepRunning = False
+    return Zc
