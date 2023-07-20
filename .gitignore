@@ -3,9 +3,7 @@ __pycache__
 *.csv
 *.ipynb
 
-archive.py
-concplot.py
-storage.py
+working_file.py
 
 dev/
 
