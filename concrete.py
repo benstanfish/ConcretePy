@@ -117,3 +117,29 @@ def ZAtPureM(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial
     Zb = 0
     P = 0
     return ZfromP(Za, Zb, P, bw, h, layer_distances, layer_areas, concrete, rebar)
+
+def createCList():
+    """Create list of 'c' values to be used for points on the PM curve."""
+    #================================================================================
+    #   Creates a list of "c" values for two sides of the PM diagram for columns
+    #   and walls. By default it generates 25 points:
+    #   1 and 25 - maximum compression
+    #   2 and 24 - half way between Pmax and Z = 0
+    #   3 and 23 - Z = 0 (es = 0)
+    #   4 and 22 - Po, axial compression at 80% of Pmax
+    #   5 and 21 - Z = 0.5 (es = 50% fy)
+    #   6 and 20 - balanced failure (Z = 1)
+    #   7, 19 - Half way between comp and tension control limits
+    #   8 and 18 - es = 0.005 (tens control limit)
+    #   9-11, 15-17 - three points from tens control to pure moment seperated by the
+    #                 geometric sequence (to give a good distribution)
+    #   12, 14 - Pure moment
+    #   15 - pure tension
+    #
+    #   The list is a numpy array, that includes the full 360° rotation. The first
+    #   half of the list is negative flexure, the back half is positive flexure.
+    #   These two halfs are generated as two seperate arrays, sorted in opposite
+    #   order, then combined into one. This ensures that the PM coordinates are 
+    #   generated in the correct order (even if its different from the listing above)
+    #================================================================================
+    
