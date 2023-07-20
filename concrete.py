@@ -14,6 +14,9 @@ def layerDistances(n, db, cc, h):
 def maximumCompression(Ag, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     return (0.85 * concrete.fc) * (Ag - np.sum(layer_areas)) + rebar.fy * np.sum(layer_areas)
 
+def maximumTension(layer_areas, rebar: mat.RebarMaterial):
+    return np.sum(layer_areas) * rebar.fy
+
 def cFromZ(Z, d, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     try:
         return concrete.ecu/(concrete.ecu - Z * rebar.ey)*d
