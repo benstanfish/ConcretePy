@@ -5,11 +5,15 @@ import numpy as np
 
 import materials as mat
 
-def geometric_sequence(n, initial, common_ratio):
+def geometricSequence(n, initial, common_ratio):
     return initial * common_ratio ^ (n - 1)
 
-def layerDistances(n, db, cc, h):
+def equalLayerDistances(n, db, cc, h):
     return np.linspace(cc + db/2, h-cc-db/2, n)
+
+def reverseLayers(h, layer_distances):
+    layers = layer_distances.copy()
+    return np.flip(h - layers)
 
 def maxAxial(Ag, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial, isTensionCase: bool = False):
     if isTensionCase == False:
@@ -127,7 +131,7 @@ def ZAtPureM(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial
     P = 0
     return ZfromP(Za, Zb, P, bw, h, layer_distances, layer_areas, concrete, rebar)
 
-def createCList():
+def createCList(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     """Create list of 'c' values to be used for points on the PM curve."""
     #================================================================================
     #   Creates a list of "c" values for two sides of the PM diagram for columns
@@ -136,10 +140,10 @@ def createCList():
     #   2 and 24 - half way between Pmax and Z = 0
     #   3 and 23 - Z = 0 (es = 0)
     #   4 and 22 - Po, axial compression at 80% of Pmax
-    #   5 and 21 - Z = 0.5 (es = 50% fy)
-    #   6 and 20 - balanced failure (Z = 1)
+    #   5 and 21 - Z = -0.5 (es = 50% fy)
+    #   6 and 20 - balanced failure (Z = -1)
     #   7, 19 - Half way between comp and tension control limits
-    #   8 and 18 - es = 0.005 (tens control limit)
+    #   8 and 18 - es = 0.005 (tension control limit)
     #   9-11, 15-17 - three points from tens control to pure moment seperated by the
     #                 geometric sequence (to give a good distribution)
     #   12, 14 - Pure moment
@@ -152,3 +156,8 @@ def createCList():
     #   generated in the correct order (even if its different from the listing above)
     #================================================================================
     
+    Pmax = maxAxial(bw * h, layer_areas, concrete, rebar, isTensionCase=False)  # Maximum compression case.
+    Pmin = maxAxial(bw * h, layer_areas, concrete, rebar, isTensionCase=True)  # Maximum tension case.
+    
+    ZPMax = ZfromP(Za=-10, Zb=0, P=Pmax, bw=bw, h=h, layer_distaces=layer_distances, layer_areas=layer_areas, concrete=concrete, rebar=rebar)
+    ZPMax = ZfromP(Za=-10, Zb=0, P=Pmax, bw=bw, h=h, layer_distaces=layer_distances, layer_areas=layer_areas, concrete=concrete, rebar=rebar)
