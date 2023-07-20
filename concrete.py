@@ -11,6 +11,12 @@ def geometric_sequence(n, initial, common_ratio):
 def layerDistances(n, db, cc, h):
     return np.linspace(cc + db/2, h-cc-db/2, n)
 
+def maxAxial(Ag, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial, isTensionCase: bool = False):
+    if isTensionCase == False:
+        return (0.85 * concrete.fc) * (Ag - np.sum(layer_areas)) + rebar.fy * np.sum(layer_areas)
+    else:
+        return np.sum(layer_areas) * rebar.fy
+    
 def maximumCompression(Ag, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     return (0.85 * concrete.fc) * (Ag - np.sum(layer_areas)) + rebar.fy * np.sum(layer_areas)
 
