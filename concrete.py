@@ -20,6 +20,12 @@ def cFromZ(Z, d, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     except ZeroDivisionError:
         return 0
     
+def cFromD(strain_at_d, d, concrete: mat.ConcreteMaterial):
+    try:
+        return d / (1 - strain_at_d / concrete.ecu)
+    except ZeroDivisionError:
+        return 0
+    
 def zFromC(c, d, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     if c != 0:
         try:
@@ -73,10 +79,11 @@ def PMPoints(c, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMater
 
 def ZfromP(Za, Zb, P, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     """Find Z (relating to ey) for a given P value. Solve using the Newton-Rapfson root finding method.
-    Calculated Pi values are shifted down by P (such that P => y = 0) to solve for it as a root."""
+    Calculated Pi values are shifted down by P (such that P => y = 0) to solve for it as a root.
+    The initial values of Za and Zb must result in P values above and below P argument, i.e., bound the desired Z value."""
     
-    minTol = 0.0000000001
-    maxIter = 100
+    minTol = 0.000000000000001  # Value selected to push error just outside the data type smallest value
+    maxIter = 500  # The maximum iterations does not usually control.
     keepRunning = True
     n = 0
     d = max(layer_distances)
@@ -84,11 +91,10 @@ def ZfromP(Za, Zb, P, bw, h, layer_distances, layer_areas, concrete: mat.Concret
     
     while keepRunning == True:
         ca = cFromZ(Za, d, concrete, rebar)
-        #cb = cFromZ(Zb, d, concrete, rebar)
         Pa = PMPoints(ca, bw, h, layer_distances, layer_areas, concrete, rebar)[0] - P
-        #Pb = PMPoints(cb, bw, h, layer_distances, layer_areas, concrete, rebar)[0] - P
 
         Zc = (Za + Zb) / 2
+        print(str(n).rjust(2,"0"), Zc)  # This is a debug string
         cc = cFromZ(Zc, d, concrete, rebar)
         Pc = PMPoints(cc, bw, h, layer_distances, layer_areas, concrete, rebar)[0] - P 
 
@@ -101,6 +107,6 @@ def ZfromP(Za, Zb, P, bw, h, layer_distances, layer_areas, concrete: mat.Concret
         
         tol = (Zb - Za) / 2
         n += 1
-        if n == maxIter or tol < minTol:
+        if n == maxIter or tol <= minTol:
             keepRunning = False
     return Zc
