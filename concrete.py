@@ -110,3 +110,10 @@ def ZfromP(Za, Zb, P, bw, h, layer_distances, layer_areas, concrete: mat.Concret
         if n == maxIter or tol <= minTol:
             keepRunning = False
     return Zc
+
+def ZAtPureM(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+    """Calculate Z (relating to ey) where P = 0, i.e, the pure moment condition."""
+    Za = 250  # Selected to be sufficiently high.
+    Zb = 0
+    P = 0
+    return ZfromP(Za, Zb, P, bw, h, layer_distances, layer_areas, concrete, rebar)
