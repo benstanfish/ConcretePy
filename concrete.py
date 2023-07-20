@@ -104,7 +104,7 @@ def PMPoints(c, bw, h, layer_distances, layer_areas, concrete: materials.Concret
     M = Mc + sum_Ms
     return P, M
 
-def getZfromP(Za, Zb, PDiff, bw, h, layer_distances, layer_areas, concrete: materials.ConcreteMaterial, rebar: materials.RebarMaterial):
+def ZfromP(Za, Zb, PDiff, bw, h, layer_distances, layer_areas, concrete: materials.ConcreteMaterial, rebar: materials.RebarMaterial):
     """Return Z for a given P value (PDiff), given two bounding Z values (Za and Zb)
 
     Args:
