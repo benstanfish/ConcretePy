@@ -101,5 +101,5 @@ def PMPoints(c, bw, h, layer_distances, layer_areas, concrete: materials.Concret
     Mc = Cc * (h - (c * concrete.b1))/2
     P = Cc + sum_Fs
     M = Mc + sum_Ms
-    return M, P
+    return P, M
 
