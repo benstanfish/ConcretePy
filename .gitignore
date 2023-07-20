@@ -5,5 +5,4 @@ __pycache__
 archive.py
 concplot.py
 
-!Module Test Template.ipynb
-!dev/
+dev/
