@@ -159,5 +159,5 @@ def createCList(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMater
     Pmax = maxAxial(bw * h, layer_areas, concrete, rebar, isTensionCase=False)  # Maximum compression case.
     Pmin = maxAxial(bw * h, layer_areas, concrete, rebar, isTensionCase=True)  # Maximum tension case.
     
-    ZPMax = ZfromP(Za=-10, Zb=0, P=Pmax, bw=bw, h=h, layer_distaces=layer_distances, layer_areas=layer_areas, concrete=concrete, rebar=rebar)
-    ZPMax = ZfromP(Za=-10, Zb=0, P=Pmax, bw=bw, h=h, layer_distaces=layer_distances, layer_areas=layer_areas, concrete=concrete, rebar=rebar)
+    ZPMax = ZfromP(-10, 2, Pmax, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial)
+    
