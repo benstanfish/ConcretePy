@@ -2,9 +2,10 @@ __pycache__
 *.pyc
 *.csv
 *.ipynb
-storage.py
+
 archive.py
 concplot.py
+storage.py
 
 dev/
 
