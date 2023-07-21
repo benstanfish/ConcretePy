@@ -71,7 +71,6 @@ def sumLayerForces(layer_areas, layer_distances, c, concrete: mat.ConcreteMateri
         force += layerForce(layer_areas[i], layer_distances[i], c, concrete, rebar)
     return force
 
-    
 def sumLayerMoments(layer_areas, layer_distances, h, c, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     moment = 0
     for i in range(layer_areas.shape[0]):
@@ -90,7 +89,7 @@ def PMPoints(c, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMater
     M = Mc + sum_Ms
     return P, M
 
-def ZFromP(Za, Zb, P, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+def zFromP(Za, Zb, P, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     """Find Z (relating to ey) for a given P value. Solve using the Newton-Rapfson root finding method.
     Calculated Pi values are shifted down by P (such that P => y = 0) to solve for it as a root.
     The initial values of Za and Zb must result in P values above and below P argument, i.e., bound the desired Z value."""
@@ -107,7 +106,7 @@ def ZFromP(Za, Zb, P, bw, h, layer_distances, layer_areas, concrete: mat.Concret
         Pa = PMPoints(ca, bw, h, layer_distances, layer_areas, concrete, rebar)[0] - P
 
         Zc = (Za + Zb) / 2
-        print(str(n).rjust(2,"0"), Zc)  # This is a debug string
+        #print(str(n).rjust(2,"0"), Zc)  # This is a debug string
         cc = cFromZ(Zc, d, concrete, rebar)
         Pc = PMPoints(cc, bw, h, layer_distances, layer_areas, concrete, rebar)[0] - P 
 
@@ -124,31 +123,26 @@ def ZFromP(Za, Zb, P, bw, h, layer_distances, layer_areas, concrete: mat.Concret
             keepRunning = False
     return Zc
 
-
-def ZAtPureM(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
-    """Calculate Z (relating to ey) where P = 0, i.e, the pure moment condition."""
+def zAtPureM(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+    """Return Z at pure moment condition, i.e., P = 0."""
     Za = -50  # Selected to be sufficiently high.
     Zb = 50
     P = 0
-    return ZFromP(Za, Zb, 0, bw, h, layer_distances, layer_areas, concrete, rebar)
+    return zFromP(Za, Zb, 0, bw, h, layer_distances, layer_areas, concrete, rebar)
 
-### TODO: ZAtMaxComp() and ZAtMaxTension --> determine alternative method to find the Z values
+def zAtMaxComp(concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+    """Return maximum Z (positive for compression) at the maximum axial load (compression)"""
+    try:
+        return concrete.ecu / (rebar.fy / rebar.Es)
+    except ZeroDivisionError:
+        return 0
 
-def ZAtMaxComp(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
-    """Calculate Z (relating to ey) where P = 0, i.e, the pure moment condition."""
-    Za = 50  # Selected to be sufficiently high. Positive Z == compression
-    Zb = 0
-    Pmax = maxAxial(bw * h, layer_areas, concrete, rebar, False)
-    Zmax = ZFromP(Za, Zb, Pmax, bw, h, layer_distances, layer_areas, concrete, rebar)
-    return Zmax
-
-def ZAtMaxTension(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
-    """Calculate Z (relating to ey) where P = 0, i.e, the pure moment condition."""
-    Za = 0
-    Zb = -50  # Selected to be sufficiently low. Negative Z == tension. If a rupture strain of 0.05 is assumed, that is 20 - 30x most yeild strains 
-    Pmin = maxAxial(bw * h, layer_areas, concrete, rebar, isTensionCase=True)
-    Zmin = ZFromP(Za, Zb, Pmin, bw, h, layer_distances, layer_areas, concrete, rebar)
-    return Zmin
+def zAtMaxTension(rebar: mat.RebarMaterial):
+    """Return minimum Z (negative for tension) at the minimum axial load (tension)"""
+    try:
+        return -rebar.eu / (rebar.fy / rebar.Es)
+    except ZeroDivisionError:
+        return 0
 
 def createCList(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     """Create list of 'c' values to be used for points on the PM curve."""
@@ -178,5 +172,5 @@ def createCList(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMater
     Pmax = maxAxial(bw * h, layer_areas, concrete, rebar, isTensionCase=False)  # Maximum compression case.
     Pmin = maxAxial(bw * h, layer_areas, concrete, rebar, isTensionCase=True)  # Maximum tension case.
     
-    ZPMax = ZFromP(-10, 2, Pmax, bw, h, layer_distances, layer_areas, concrete, rebar)
+    ZPMax = zFromP(-10, 2, Pmax, bw, h, layer_distances, layer_areas, concrete, rebar)
     

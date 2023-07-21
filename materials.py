@@ -2,6 +2,7 @@
 
 from math import sqrt
 
+#TODO: Global bar_* variables have been copied to RebarMaterial(), determine if they still need to be global here?
 # Rebar sizes, diameters, areas, weights per ACI 318 Appendix A
 bar_numbers = [3, 4, 5, 6, 7, 8, 9, 10, 11, 14, 18]
 
@@ -116,4 +117,22 @@ class RebarMaterial(SteelMaterial):
                             14: 7.65,
                             18: 13.6
                         }
+        self.eu = self.ult_strain  # Rebar ultimate strain, defaults to ASTM A615 values.
         
+    @property
+    def ult_strain(self):
+        """Ultimate strains associated with ASTM A615 material."""
+        if self.fy <= 40000:
+            return 0.155
+        elif self.fy <= 60000:
+            return 0.12
+        elif self.fy <= 75000:
+            return 0.07
+        else:
+            return 0.05  # For more information refer to ASCE 41-17, Sec. 10.3.3.1. 
+                         # For historic rebar lower values may be more appropriate (e.g. 0.02, etc.)
+    
+    @property
+    def reset_eu(self):
+        """Reset the ultimate strain value to the original initialized value."""
+        self.eu = self.ult_strain
