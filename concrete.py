@@ -144,14 +144,14 @@ def createCList(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMater
     #   6 and 20 - balanced failure (Z = -1)
     #   7, 19 - Half way between comp and tension control limits
     #   8 and 18 - es = 0.005 (tension control limit)
-    #   9-11, 15-17 - three points from tens control to pure moment seperated by the
+    #   9-11, 15-17 - three points from tens control to pure moment separated by the
     #                 geometric sequence (to give a good distribution)
     #   12, 14 - Pure moment
     #   15 - pure tension
     #
     #   The list is a numpy array, that includes the full 360° rotation. The first
     #   half of the list is negative flexure, the back half is positive flexure.
-    #   These two halfs are generated as two seperate arrays, sorted in opposite
+    #   These two halves are generated as two separated arrays, sorted in opposite
     #   order, then combined into one. This ensures that the PM coordinates are 
     #   generated in the correct order (even if its different from the listing above)
     #================================================================================
