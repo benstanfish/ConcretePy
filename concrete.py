@@ -129,7 +129,7 @@ def ZAtPureM(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial
     Za = 250  # Selected to be sufficiently high.
     Zb = 0
     P = 0
-    return ZfromP(Za, Zb, P, bw, h, layer_distances, layer_areas, concrete, rebar)
+    return ZFromP(Za, Zb, P, bw, h, layer_distances, layer_areas, concrete, rebar)
 
 def createCList(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     """Create list of 'c' values to be used for points on the PM curve."""
@@ -159,5 +159,5 @@ def createCList(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMater
     Pmax = maxAxial(bw * h, layer_areas, concrete, rebar, isTensionCase=False)  # Maximum compression case.
     Pmin = maxAxial(bw * h, layer_areas, concrete, rebar, isTensionCase=True)  # Maximum tension case.
     
-    ZPMax = ZfromP(-10, 2, Pmax, bw, h, layer_distances, layer_areas, concrete, rebar)
+    ZPMax = ZFromP(-10, 2, Pmax, bw, h, layer_distances, layer_areas, concrete, rebar)
     
