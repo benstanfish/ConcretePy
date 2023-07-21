@@ -28,26 +28,22 @@ def maximumTension(layer_areas, rebar: mat.RebarMaterial):
     return np.sum(layer_areas) * rebar.fy
 
 def cFromZ(Z, d, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
-    try:
-        return concrete.ecu/(concrete.ecu - Z * rebar.ey)*d
-    except ZeroDivisionError:
-        return 0
+    if Z * rebar.ey == concrete.ecu:
+        return 1e12  # This is the maximum compression case, where c = infinite
+    else:
+        return concrete.ecu / (concrete.ecu - Z * rebar.ey) * d
     
 def cFromD(strain_at_d, d, concrete: mat.ConcreteMaterial):
     try:
         return d / (1 - strain_at_d / concrete.ecu)
     except ZeroDivisionError:
-        return 0
+        return 1e12  # When the strain at d = ecu ==> pure compression, c is infinite.
     
 def zFromC(c, d, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
-    if c != 0:
-        try:
-            return concrete.ecu / rebar.ey * (1 - d / abs(c))
-        except:
-            return 0
+    if abs(c) == 0:
+        return zAtMaxTension()  # This is assumed to be max tension case --> use ultimate strain.
     else:
-        # c = 0 is error case; return a number that is well past the rupture strain
-        return -50
+        return concrete.ecu / rebar.ey * (1 - d / abs(c))
 
 def layerStrain(layer_distance, c, concrete: mat.ConcreteMaterial):
     try:
@@ -89,7 +85,7 @@ def PMPoints(c, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMater
     M = Mc + sum_Ms
     return P, M
 
-def zFromP(Za, Zb, P, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+def zFromP(Za, Zb, PDiff, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     """Find Z (relating to ey) for a given P value. Solve using the Newton-Rapfson root finding method.
     Calculated Pi values are shifted down by P (such that P => y = 0) to solve for it as a root.
     The initial values of Za and Zb must result in P values above and below P argument, i.e., bound the desired Z value."""
@@ -100,23 +96,27 @@ def zFromP(Za, Zb, P, bw, h, layer_distances, layer_areas, concrete: mat.Concret
     n = 0
     d = max(layer_distances)
     tol = (Zb - Za) / 2
-    
+   
     while keepRunning == True:
         ca = cFromZ(Za, d, concrete, rebar)
-        Pa = PMPoints(ca, bw, h, layer_distances, layer_areas, concrete, rebar)[0] - P
+        cb = cFromZ(Zb, d, concrete, rebar)
+        Pa = PMPoints(ca, bw, h, layer_distances, layer_areas, concrete, rebar)[0] - PDiff
+        Pb = PMPoints(cb, bw, h, layer_distances, layer_areas, concrete, rebar)[0] - PDiff
 
         Zc = (Za + Zb) / 2
         #print(str(n).rjust(2,"0"), Zc)  # This is a debug string
         cc = cFromZ(Zc, d, concrete, rebar)
-        Pc = PMPoints(cc, bw, h, layer_distances, layer_areas, concrete, rebar)[0] - P 
-
-        if abs(Pc) == 0:
+        Pc = PMPoints(cc, bw, h, layer_distances, layer_areas, concrete, rebar)[0] - PDiff 
+        #print(n, Pc)
+        
+        if Pc == 0:
             return Zc
         elif np.sign(Pc) ==  np.sign(Pa):
             Za = Zc
-        else:
+        elif np.sign(Pc) == np.sign(Pb):
             Zb = Zc
-        
+        else:
+            print("Error at if block.")
         tol = (Zb - Za) / 2
         n += 1
         if n == maxIter or tol <= minTol:
@@ -144,6 +144,12 @@ def zAtMaxTension(rebar: mat.RebarMaterial):
     except ZeroDivisionError:
         return 0
 
+def cAtMaxComp():
+    return 1e12  # At pure compression, the "c" distance is effectively infinite.
+
+def cAtMaxTension():
+    return 0 # At pure compression, the "c" distance is effectively zero.
+
 def createCList(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     """Create list of 'c' values to be used for points on the PM curve."""
     #================================================================================
@@ -156,10 +162,10 @@ def createCList(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMater
     #   5 and 21 - Z = -0.5 (es = 50% fy)
     #   6 and 20 - balanced failure (Z = -1)
     #   7, 19 - Half way between comp and tension control limits
-    #   8 and 18 - es = 0.005 (tension control limit)
+    #   8 and 18 - es = -0.005 (tension control limit)
     #   9-11, 15-17 - three points from tens control to pure moment separated by the
     #                 geometric sequence (to give a good distribution)
-    #   12, 14 - Pure moment
+    #   12, 14 - pure moment
     #   15 - pure tension
     #
     #   The list is a numpy array, that includes the full 360° rotation. The first
@@ -169,8 +175,24 @@ def createCList(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMater
     #   generated in the correct order (even if its different from the listing above)
     #================================================================================
     
-    Pmax = maxAxial(bw * h, layer_areas, concrete, rebar, isTensionCase=False)  # Maximum compression case.
-    Pmin = maxAxial(bw * h, layer_areas, concrete, rebar, isTensionCase=True)  # Maximum tension case.
+    # First half of diagram
     
-    ZPMax = zFromP(-10, 2, Pmax, bw, h, layer_distances, layer_areas, concrete, rebar)
+    c_0 = cAtMaxComp()  # Point 1
+    c_3 = cFromZ(0, max(layer_distances), concrete, rebar)  # Point 3
+    
+    Pmax = maxAxial(bw * h, layer_areas, concrete, rebar, isTensionCase=False)
+    Zmax = zAtMaxComp()
+    Zmin = zAtMaxTension()
+    z_Po = zFromP(Zmax, Zmin, 0.8 * Pmax, bw, h, layer_distances, layer_areas, concrete, rebar)
+    c_4 = cFromZ(z_Po, max(layer_distances), concrete, rebar)
+    c_5 = cFromZ(-0.5, max(layer_distances), concrete, rebar) 
+    c_6 = cFromZ(-1, max(layer_distances), concrete, rebar)
+    c_8 = cFromD(-0.005, max(layer_distances), concrete, rebar)
+    c_7 = (c_6 + c_8)/2
+    Zm = zAtPureM(bw, h, layer_distances, layer_areas, concrete, rebar)
+    c_12 = cFromZ(Zm, max(layer_distances), concrete, rebar)
+    
+    
+    
+    c_15 = cAtMaxTension()
     
