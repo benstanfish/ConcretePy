@@ -131,6 +131,21 @@ def ZAtPureM(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial
     P = 0
     return ZFromP(Za, Zb, P, bw, h, layer_distances, layer_areas, concrete, rebar)
 
+def ZAtMaxComp(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+    """Calculate Z (relating to ey) where P = 0, i.e, the pure moment condition."""
+    Za = 250  # Selected to be sufficiently high. Positive Z == compression
+    Zb = 0
+    Pmax = maxAxial(bw * h, layer_areas, concrete, rebar, False)
+    return ZAtMaxComp(Za, Zb, Pmax, bw, h, layer_distances, layer_areas, concrete, rebar)
+
+def ZAtMaxTension(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+    """Calculate Z (relating to ey) where P = 0, i.e, the pure moment condition."""
+    Za = 0
+    Zb = -250  # Selected to be sufficiently low. Negative Z == tension. If a rupture strain of 0.05 is assumed, that is 20 - 30x most yeild strains 
+    Pmin = maxAxial(bw * h, layer_areas, concrete, rebar, isTensionCase=True)
+    return ZAtMaxTension(Za, Zb, Pmin, bw, h, layer_distances, layer_areas, concrete, rebar)
+
+
 def createCList(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     """Create list of 'c' values to be used for points on the PM curve."""
     #================================================================================
