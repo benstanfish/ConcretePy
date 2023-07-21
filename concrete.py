@@ -107,7 +107,7 @@ def ZFromP(Za, Zb, P, bw, h, layer_distances, layer_areas, concrete: mat.Concret
         Pa = PMPoints(ca, bw, h, layer_distances, layer_areas, concrete, rebar)[0] - P
 
         Zc = (Za + Zb) / 2
-        #print(str(n).rjust(2,"0"), Zc)  # This is a debug string
+        print(str(n).rjust(2,"0"), Zc)  # This is a debug string
         cc = cFromZ(Zc, d, concrete, rebar)
         Pc = PMPoints(cc, bw, h, layer_distances, layer_areas, concrete, rebar)[0] - P 
 
@@ -124,17 +124,20 @@ def ZFromP(Za, Zb, P, bw, h, layer_distances, layer_areas, concrete: mat.Concret
             keepRunning = False
     return Zc
 
+
 def ZAtPureM(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     """Calculate Z (relating to ey) where P = 0, i.e, the pure moment condition."""
-    Za = 10  # Selected to be sufficiently high.
-    Zb = -50
+    Za = -50  # Selected to be sufficiently high.
+    Zb = 50
     P = 0
     return ZFromP(Za, Zb, 0, bw, h, layer_distances, layer_areas, concrete, rebar)
 
+### TODO: ZAtMaxComp() and ZAtMaxTension --> determine alternative method to find the Z values
+
 def ZAtMaxComp(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     """Calculate Z (relating to ey) where P = 0, i.e, the pure moment condition."""
-    Za = 0  # Selected to be sufficiently high. Positive Z == compression
-    Zb = -50
+    Za = 50  # Selected to be sufficiently high. Positive Z == compression
+    Zb = 0
     Pmax = maxAxial(bw * h, layer_areas, concrete, rebar, False)
     Zmax = ZFromP(Za, Zb, Pmax, bw, h, layer_distances, layer_areas, concrete, rebar)
     return Zmax
@@ -142,7 +145,7 @@ def ZAtMaxComp(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMateri
 def ZAtMaxTension(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     """Calculate Z (relating to ey) where P = 0, i.e, the pure moment condition."""
     Za = 0
-    Zb = -35  # Selected to be sufficiently low. Negative Z == tension. If a rupture strain of 0.05 is assumed, that is 20 - 30x most yeild strains 
+    Zb = -50  # Selected to be sufficiently low. Negative Z == tension. If a rupture strain of 0.05 is assumed, that is 20 - 30x most yeild strains 
     Pmin = maxAxial(bw * h, layer_areas, concrete, rebar, isTensionCase=True)
     Zmin = ZFromP(Za, Zb, Pmin, bw, h, layer_distances, layer_areas, concrete, rebar)
     return Zmin
