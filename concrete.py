@@ -90,7 +90,7 @@ def PMPoints(c, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMater
     M = Mc + sum_Ms
     return P, M
 
-def ZfromP(Za, Zb, P, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+def ZFromP(Za, Zb, P, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     """Find Z (relating to ey) for a given P value. Solve using the Newton-Rapfson root finding method.
     Calculated Pi values are shifted down by P (such that P => y = 0) to solve for it as a root.
     The initial values of Za and Zb must result in P values above and below P argument, i.e., bound the desired Z value."""
