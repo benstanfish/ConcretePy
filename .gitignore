@@ -1,11 +1,11 @@
-__pycache__
+__pycache__/*
+notebooks/*
+docs/*
+stash/*
+
 *.pyc
 *.csv
 *.ipynb
 
-notebooks/
-
-working_file.py
-
-
+!Module Test Template.ipynb
 
