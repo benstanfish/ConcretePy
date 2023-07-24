@@ -9,19 +9,19 @@ import numpy as np
 
 import materials as mat
 
-def geometricSequence(n, initial, common_ratio):
+def geometric_sequence(n, initial, common_ratio):
     return initial * common_ratio ^ (n - 1)
 
-def equalLayerDistances(layer_count, bar_diameter, clear_cover, total_member_depth):
+def equal_layer_distances(layer_count, bar_diameter, clear_cover, total_member_depth):
     return np.linspace(clear_cover + bar_diameter/2, 
                        total_member_depth - clear_cover - bar_diameter/2, 
                        layer_count)
 
-def reverseLayers(total_member_depth, layer_distances):
+def reverse_layers(total_member_depth, layer_distances):
     layers = layer_distances.copy()
     return np.flip(total_member_depth - layers)
 
-def maxAxial(gross_area, layer_areas, 
+def max_axial(gross_area, layer_areas, 
              concrete: mat.ConcreteMaterial, 
              rebar: mat.RebarMaterial, 
              isTensionCase: bool = False):
@@ -30,10 +30,10 @@ def maxAxial(gross_area, layer_areas,
     else:
         return np.sum(layer_areas) * rebar.fy * -1
     
-def maximumCompression(gross_area, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+def max_compression(gross_area, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     return (0.85 * concrete.fc) * (gross_area - np.sum(layer_areas)) + rebar.fy * np.sum(layer_areas)
 
-def maximumTension(layer_areas, rebar: mat.RebarMaterial):
+def max_tension(layer_areas, rebar: mat.RebarMaterial):
     return np.sum(layer_areas) * rebar.fy * -1
 
 #================================================================================
@@ -126,8 +126,8 @@ def PMPoints(c, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMater
     for i in range(layer_distances.shape[0]):
         sum_Fs += layerForce(layer_areas[i], layer_distances[i], c_act, concrete, rebar)
         sum_Ms += layerForce(layer_areas[i], layer_distances[i], c_act, concrete, rebar) * (h/2 - layer_distances[i])
-    Cc = 0.85 * bw * (c_act * concrete.b1) * concrete.fc
-    Mc = Cc * (h - (c_act * concrete.b1))/2
+    Cc = 0.85 * bw * (c_act * concrete.beta1) * concrete.fc
+    Mc = Cc * (h - (c_act * concrete.beta1))/2
     P = Cc + sum_Fs
     M = Mc + sum_Ms
     return P, M
@@ -207,7 +207,7 @@ def createCList(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMater
     c_0 = cAtMaxComp()  # Point 1
     c_3 = cFromZ(0, max(layer_distances), concrete, rebar)  # Point 3
     
-    Pmax = maxAxial(bw * h, layer_areas, concrete, rebar, isTensionCase=False)
+    Pmax = max_axial(bw * h, layer_areas, concrete, rebar, isTensionCase=False)
     Zmax = zAtMaxComp()
     Zmin = zAtMaxTension()
     z_Po = zFromP(Zmax, Zmin, 0.8 * Pmax, bw, h, layer_distances, layer_areas, concrete, rebar)

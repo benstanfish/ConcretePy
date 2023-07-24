@@ -61,8 +61,7 @@ class ConcreteMaterial:
         self.ecu = 0.003  # Maximum concrete compression strain per ACI 318 Sec. 22.2.2.1.
         self.Ec = 57000 * sqrt(self.fc)  # Elastic modulus (psi) per ACI 318 Eq. (19.2.2.1.b).
         self.fr = 7.5 * lam * sqrt(fc)  # Modulus of rupture (psi) per ACI 318 Eq. (19.2.3.1).
-        self.b1 = self.beta1  # beta1 factor relating the "a" and "c" distances per ACI 318 Sec. 22.2.2.4.1.
-
+    
     @property
     def beta1(self):
         """Calculate the beta1 factor per ACI 318 Eq. (22.2.2.4.1) and Table 22.2.2.4.3"""
