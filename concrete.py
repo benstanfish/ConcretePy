@@ -12,12 +12,16 @@ import materials as mat
 def geometric_sequence(n, initial, common_ratio):
     return initial * common_ratio ^ (n - 1)
 
-def equal_layer_distances(layer_count, bar_diameter, clear_cover, total_member_depth):
+def equal_layer_distances(layer_count, 
+                          bar_diameter, 
+                          clear_cover, 
+                          total_member_depth):
     return np.linspace(clear_cover + bar_diameter/2, 
                        total_member_depth - clear_cover - bar_diameter/2, 
                        layer_count)
 
-def reverse_layers(total_member_depth, layer_distances):
+def reverse_layers(total_member_depth, 
+                   layer_distances):
     layers = layer_distances.copy()
     return np.flip(total_member_depth - layers)
 
@@ -30,7 +34,10 @@ def max_axial(gross_area, layer_areas,
     else:
         return np.sum(layer_areas) * rebar.fy * -1
     
-def max_compression(gross_area, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+def max_compression(gross_area, 
+                    layer_areas, 
+                    concrete: mat.ConcreteMaterial, 
+                    rebar: mat.RebarMaterial):
     return (0.85 * concrete.fc) * (gross_area - np.sum(layer_areas)) + rebar.fy * np.sum(layer_areas)
 
 def max_tension(layer_areas, rebar: mat.RebarMaterial):
