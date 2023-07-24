@@ -3,7 +3,7 @@ __version__ = "0.0.5"
 
 print('materials.py <version {}> successfully imported'.format(__version__))
 
-
+import numpy as np
 
 from math import sqrt
 
@@ -75,9 +75,9 @@ class ConcreteMaterial:
 
 class SteelMaterial:
     def __init__(self, fy = 60000):
-        self.fy = fy  # Minimum specified yeild-strength of rebar (psi), user-specified.
-        self.Es = 29000000  # Modulus of elasticity for nonprestressed bars and wires per ACI 318 Sec. 20.2.2.2
-        self.ey = self.fy / self.Es  # Yeild strain of the rebar, refer to ACI 318 Sec. R20.2.2.1
+        self.fy = fy  # Minimum specified yield-strength of rebar (psi), user-specified.
+        self.Es = 29000000  # Modulus of elasticity for non-prestressed bars and wires per ACI 318 Sec. 20.2.2.2
+        self.ey = self.fy / self.Es  # Yield strain of the rebar, refer to ACI 318 Sec. R20.2.2.1
         
 class RebarMaterial(SteelMaterial):
     def __init__(self, fy=60000):
@@ -141,3 +141,67 @@ class RebarMaterial(SteelMaterial):
     def reset_eu(self):
         """Reset the ultimate strain value to the original initialized value."""
         self.eu = self.ult_strain
+        
+        
+class ConcreteSection:
+    def __init__(self, widths, heights, concrete: ConcreteMaterial):
+        self.widths = np.array(widths)
+        self.heights = np.array(heights)
+        self.material = concrete
+    
+    @property
+    def max_width(self):
+        # TODO: Develop way to access appropriate width, based on compression block depth
+        return max(self.widths)
+    
+    @property
+    def total_height(self):
+        return sum(self.heights)
+    
+    @property
+    def area(self):
+        gross_area = 0
+        for i in range(max(self.widths.shape[0], self.heights.shape[0])):
+            gross_area += self.widths[i] * self.heights[i]
+        return gross_area
+    
+    @property
+    def centroid(self):
+        # Centroid is measured parallel to the height dimension
+        areas = np.zeros(self.heights.shape[0])
+        centers = np.zeros(self.heights.shape[0])
+        product = np.zeros(self.heights.shape[0])
+        running_height = 0
+        for i in range(self.heights.shape[0]):
+            areas[i] = self.widths[i] * self.heights[i]
+            centers[i] = self.heights[i] / 2 + running_height
+            running_height += self.heights[i]
+            product[i] = areas[i] * centers[i]
+        total_product = sum(product)
+        total_area = sum(areas)
+        return total_product / total_area
+    
+    @property
+    def inertia(self):
+        # Inertia is the moment of inertia measured parallel to the height dimension
+        areas = np.zeros(self.heights.shape[0])
+        centers = np.zeros(self.heights.shape[0])
+        center_offsets = np.zeros(self.heights.shape[0])
+        self_inertias = np.zeros(self.heights.shape[0])
+        total_centroid = self.centroid
+        running_height = 0
+        parallel_axis_terms = np.zeros(self.heights.shape[0])
+        for i in range(self.heights.shape[0]):
+            self_inertias[i] = self.widths[i] / 12 * self.heights[i] ** 3
+            areas[i] = self.widths[i] * self.heights[i]
+            centers[i] = self.heights[i] / 2 + running_height
+            center_offsets[i] = centers[i] - total_centroid
+            running_height += self.heights[i]
+            parallel_axis_terms[i] = areas[i] * center_offsets[i] ** 2
+        return sum(self_inertias) + sum(parallel_axis_terms)
+        
+    @property
+    def radius_gyration(self):
+        return sqrt(self.inertia / self.area)    
+    
+    # TODO: Develop radius of gyration property
