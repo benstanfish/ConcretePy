@@ -1,5 +1,5 @@
 __pycache__/*
-notebooks/*
+
 docs/*
 stash/*
 
@@ -7,5 +7,5 @@ stash/*
 *.csv
 *.ipynb
 
-!Module Test Template.ipynb
 
+!notebooks/*
