@@ -1,35 +1,66 @@
 """Library of functions to create PM coordinates for creating concrete PM diagrams"""
+__version__ = "0.0.3"
+
+print('concrete.py <version {}> successfully imported'.format(__version__))
+
 
 import matplotlib.pyplot as plt
 import numpy as np
+
+from math import inf
 
 import materials as mat
 
 def geometricSequence(n, initial, common_ratio):
     return initial * common_ratio ^ (n - 1)
 
-def equalLayerDistances(n, db, cc, h):
-    return np.linspace(cc + db/2, h-cc-db/2, n)
+def equalLayerDistances(layer_count, bar_diameter, clear_cover, total_member_depth):
+    return np.linspace(clear_cover + bar_diameter/2, 
+                       total_member_depth - clear_cover - bar_diameter/2, 
+                       layer_count)
 
-def reverseLayers(h, layer_distances):
+def reverseLayers(total_member_depth, layer_distances):
     layers = layer_distances.copy()
-    return np.flip(h - layers)
+    return np.flip(total_member_depth - layers)
 
-def maxAxial(Ag, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial, isTensionCase: bool = False):
+def maxAxial(gross_area, layer_areas, 
+             concrete: mat.ConcreteMaterial, 
+             rebar: mat.RebarMaterial, 
+             isTensionCase: bool = False):
     if isTensionCase == False:
-        return (0.85 * concrete.fc) * (Ag - np.sum(layer_areas)) + rebar.fy * np.sum(layer_areas)
+        return (0.85 * concrete.fc) * (gross_area - np.sum(layer_areas)) + rebar.fy * np.sum(layer_areas)
     else:
-        return np.sum(layer_areas) * rebar.fy
+        return np.sum(layer_areas) * rebar.fy * -1
     
-def maximumCompression(Ag, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
-    return (0.85 * concrete.fc) * (Ag - np.sum(layer_areas)) + rebar.fy * np.sum(layer_areas)
+def maximumCompression(gross_area, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+    return (0.85 * concrete.fc) * (gross_area - np.sum(layer_areas)) + rebar.fy * np.sum(layer_areas)
 
 def maximumTension(layer_areas, rebar: mat.RebarMaterial):
-    return np.sum(layer_areas) * rebar.fy
+    return np.sum(layer_areas) * rebar.fy * -1
+
+#================================================================================
+#    Using similar triangles, one can relate the concrete strain (ecu) with that
+#    in the rebar at a depth "d" and the neutral axis depth "c". Using the
+#    coefficient Z as the ratio of steel strain at "d" to the yield strain "ey"
+#================================================================================
+
+def zAtMaxComp(concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+    """Return maximum Z (positive for compression) at the maximum axial load (compression)"""
+    return round(concrete.ecu / (rebar.fy / rebar.Es), 4)  # Really don't need that many digits
+
+def zAtMaxTension(rebar: mat.RebarMaterial):
+    """Return minimum Z (negative for tension) at the minimum axial load (tension)"""
+    return round(rebar.eu / (rebar.fy / rebar.Es), 4)  # Really don't need that many digits
+
+def cAtMaxComp():
+    return inf  # At pure compression, the "c" distance is effectively infinite.
+
+def cAtMaxTension():
+    return 0 # At pure compression, the "c" distance is effectively zero.
 
 def cFromZ(Z, d, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     if Z * rebar.ey == concrete.ecu:
-        return 1e12  # This is the maximum compression case, where c = infinite
+        return inf  # This is the maximum compression case, where c = infinite
     else:
         return concrete.ecu / (concrete.ecu - Z * rebar.ey) * d
     
@@ -45,11 +76,14 @@ def zFromC(c, d, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     else:
         return concrete.ecu / rebar.ey * (1 - d / abs(c))
 
-def layerStrain(layer_distance, c, concrete: mat.ConcreteMaterial):
+def layerStrain(layer_distance, c, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     try:
-        return (c - layer_distance)/c * concrete.ecu
-    except:
-        return 0
+        if c == 0:
+            return rebar.eu  # When c close to 0, this is a pure tension case.
+        else:
+            return (c - layer_distance) / c * concrete.ecu
+    except ZeroDivisionError:
+        return rebar.eu  # If the pure tension case is not caught above.
     
 def layerStress(layer_distance, c, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     strain = layerStrain(layer_distance, c, concrete)
@@ -109,9 +143,9 @@ def zFromP(Za, Zb, PDiff, bw, h, layer_distances, layer_areas, concrete: mat.Con
         Pc = PMPoints(cc, bw, h, layer_distances, layer_areas, concrete, rebar)[0] - PDiff 
         #print(n, Pc)
         
-        if Pc == 0:
+        if abs(Pc) == 0:
             return Zc
-        elif np.sign(Pc) ==  np.sign(Pa):
+        elif np.sign(Pc) == np.sign(Pa):
             Za = Zc
         elif np.sign(Pc) == np.sign(Pb):
             Zb = Zc
@@ -129,26 +163,6 @@ def zAtPureM(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial
     Zb = 50
     P = 0
     return zFromP(Za, Zb, 0, bw, h, layer_distances, layer_areas, concrete, rebar)
-
-def zAtMaxComp(concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
-    """Return maximum Z (positive for compression) at the maximum axial load (compression)"""
-    try:
-        return concrete.ecu / (rebar.fy / rebar.Es)
-    except ZeroDivisionError:
-        return 0
-
-def zAtMaxTension(rebar: mat.RebarMaterial):
-    """Return minimum Z (negative for tension) at the minimum axial load (tension)"""
-    try:
-        return -rebar.eu / (rebar.fy / rebar.Es)
-    except ZeroDivisionError:
-        return 0
-
-def cAtMaxComp():
-    return 1e12  # At pure compression, the "c" distance is effectively infinite.
-
-def cAtMaxTension():
-    return 0 # At pure compression, the "c" distance is effectively zero.
 
 def createCList(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     """Create list of 'c' values to be used for points on the PM curve."""

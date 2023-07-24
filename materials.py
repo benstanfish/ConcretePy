@@ -1,4 +1,9 @@
 """Library of material-related functions, based on ACI 318 and US customary units (inches, pounds)"""
+__version__ = "0.0.5"
+
+print('materials.py <version {}> successfully imported'.format(__version__))
+
+
 
 from math import sqrt
 
@@ -123,13 +128,13 @@ class RebarMaterial(SteelMaterial):
     def ult_strain(self):
         """Ultimate strains associated with ASTM A615 material."""
         if self.fy <= 40000:
-            return 0.155
+            return -0.155
         elif self.fy <= 60000:
-            return 0.12
+            return -0.12
         elif self.fy <= 75000:
-            return 0.07
+            return -0.07
         else:
-            return 0.05  # For more information refer to ASCE 41-17, Sec. 10.3.3.1. 
+            return -0.05  # For more information refer to ASCE 41-17, Sec. 10.3.3.1. 
                          # For historic rebar lower values may be more appropriate (e.g. 0.02, etc.)
     
     @property
