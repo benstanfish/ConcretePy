@@ -145,10 +145,10 @@ class RebarMaterial(SteelMaterial):
         
 class ConcreteSection:
     def __init__(self, widths, heights, concrete: ConcreteMaterial):
-        self.widths = np.array(widths)
-        self.heights = np.array(heights)
-        self.material = concrete
-    
+        self.widths = widths
+        self.heights = heights
+        self.material = concrete        
+        
     @property
     def max_width(self):
         # TODO: Develop way to access appropriate width, based on compression block depth
