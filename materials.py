@@ -202,6 +202,4 @@ class ConcreteSection:
         
     @property
     def radius_gyration(self):
-        return sqrt(self.inertia / self.area)    
-    
-    # TODO: Develop radius of gyration property
+        return sqrt(self.inertia / self.area)   
