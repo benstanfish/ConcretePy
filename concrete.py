@@ -1,13 +1,15 @@
 """Library of functions to create PM coordinates for creating concrete PM diagrams"""
-__version__ = "0.0.3"
+__version__ = "0.0.4"
 
 print('concrete.py <version {}> successfully imported'.format(__version__))
-
 
 import matplotlib.pyplot as plt
 import numpy as np
 
 import materials as mat
+
+comp_c = 1e6  # Pure compression condition: c = infinity
+tens_c = 0  # Pure tension condition: c = 0
 
 def geometric_sequence(n, initial, common_ratio):
     return initial * common_ratio ^ (n - 1)
@@ -33,15 +35,6 @@ def max_axial(gross_area, layer_areas,
         return (0.85 * concrete.fc) * (gross_area - np.sum(layer_areas)) + rebar.fy * np.sum(layer_areas)
     else:
         return np.sum(layer_areas) * rebar.fy * -1
-    
-def max_compression(gross_area, 
-                    layer_areas, 
-                    concrete: mat.ConcreteMaterial, 
-                    rebar: mat.RebarMaterial):
-    return (0.85 * concrete.fc) * (gross_area - np.sum(layer_areas)) + rebar.fy * np.sum(layer_areas)
-
-def max_tension(layer_areas, rebar: mat.RebarMaterial):
-    return np.sum(layer_areas) * rebar.fy * -1
 
 #================================================================================
 #    Using similar triangles, one can relate the concrete strain (ecu) with that
@@ -49,133 +42,135 @@ def max_tension(layer_areas, rebar: mat.RebarMaterial):
 #    coefficient Z as the ratio of steel strain at "d" to the yield strain "ey"
 #================================================================================
 
-def zAtMaxComp(concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
-    """Return maximum Z (positive for compression) at the maximum axial load (compression)"""
-    return round(concrete.ecu / (rebar.fy / rebar.Es), 4)  # Really don't need that many digits
+def max_z(concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+    return concrete.ecu / (rebar.fy / rebar.Es)  # Occurs at maximum (pure) compression, c = inf
 
-def zAtMaxTension(rebar: mat.RebarMaterial):
-    """Return minimum Z (negative for tension) at the minimum axial load (tension)"""
-    return round(rebar.eu / (rebar.fy / rebar.Es), 4)  # Really don't need that many digits
+def min_z(rebar: mat.RebarMaterial):
+    return rebar.eu / (rebar.fy / rebar.Es)  # Occurs at maximum (pure) tension; c = 0
 
-def cAtMaxComp():
-    return 1e5  # At pure compression, the "c" distance is effectively infinite.
+def comp_z(concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+    # This is just a wrapper function
+    return max_z(concrete, rebar)  
 
-def cAtMaxTension():
-    return 0 # At pure compression, the "c" distance is effectively zero.
+def tens_z(rebar: mat.RebarMaterial):
+    # This is just a wrapper function
+    return min_z(rebar)
 
-def cFromZ(Z, d, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
-    if Z * rebar.ey == concrete.ecu:
-        return 1e6  # This is the maximum compression case, where c = infinite
-    elif Z <= zAtMaxTension(rebar):
-        return 0
+def z_from_c(c, layer_distance, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+    if c == 0:
+        return max_z(concrete, rebar)
     else:
-        return concrete.ecu * d / (concrete.ecu - Z * rebar.ey)
-            
-def cFromStrain(strain_at_d, d, concrete: mat.ConcreteMaterial):
-    if strain_at_d == concrete.ecu:
-        return 1e5 # When the strain at d = ecu ==> pure compression, c is infinite.
-    else:
-        return d / (1 - strain_at_d / concrete.ecu)
-    
-def zFromC(c, d, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
-    if abs(c) == 0:
-        return zAtMaxTension(rebar)  # This is assumed to be max tension case --> use ultimate strain.
-    elif d == c:
-        return 0
-    else:
-        return concrete.ecu / rebar.ey * (1 - d / c)
+        return (c - layer_distance) / c * (concrete.ecu / rebar.ey)
 
-def layerStrain(layer_distance, c, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
-    try:
-        if c == 0:
-            return rebar.eu # When c close to 0, this is a pure tension case.
-        else:
-            return (c - layer_distance) * concrete.ecu / c
-    except ZeroDivisionError:
-        return rebar.eu  # If the pure tension case is not caught above.
-    
-def layerStress(layer_distance: float, c: float, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
-    strain = layerStrain(layer_distance, c, concrete, rebar)
-    if strain <= -rebar.ey:
-        return -rebar.fy
-    elif strain >= rebar.ey:
-        return rebar.fy
+def c_from_z(z, layer_distance, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+    if z * rebar.ey == concrete.ecu:
+        return comp_c
+    else:
+        return max(layer_distance / (1 - (z * rebar.ey / concrete.ecu)), 0)
+
+def c_from_strain(layer_strain, layer_distance, concrete: mat.ConcreteMaterial):
+    if layer_strain == concrete.ecu:
+        return comp_c
+    else:
+        return layer_distance / (1 - (layer_strain / concrete.ecu))
+
+#================================================================================
+#    
+#                Formulae for calculating individual P-M points
+#    
+#================================================================================    
+
+def layer_strain(layer_distance, c, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+    if c == 0:
+        return rebar.eu
+    else:
+        return (c - layer_distance) * concrete.ecu / c
+
+def layer_stress(layer_distance, c, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+    strain = layer_strain(layer_distance, c, concrete, rebar)
+    if abs(strain) >= rebar.ey:
+        return rebar.fy * np.sign(strain)
     else:
         return strain * rebar.Es
-
-def layerForce(layer_area: float, layer_distance:float , c, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
-    if layer_distance >= c:
-        return layerStress(layer_distance, c, concrete, rebar) * layer_area
-    else:
-        return (layerStress(layer_distance, c, concrete, rebar) - 0.85 * concrete.fc) * layer_area
     
-def sumLayerForces(layer_areas, layer_distances, c, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+def layer_force(layer_area, layer_distance, c, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+    if layer_distance >= c:
+        return layer_stress(layer_distance, c, concrete, rebar) * layer_area
+    else:
+        return (layer_stress(layer_distance, c, concrete, rebar) - 0.85 * concrete.fc) * layer_area
+    
+def sum_layer_forces(layer_areas, layer_distances, c, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+    # This function only considers the steel contributions.
     force = 0
-    for i in range(layer_areas.shape[0]):
-        force += layerForce(layer_areas[i], layer_distances[i], c, concrete, rebar)
+    for i in range(layer_distances.shape[0]):
+        force += layer_force(layer_areas[i], layer_distances[i], c, concrete, rebar)
     return force
 
-def sumLayerMoments(layer_areas, layer_distances, h, c, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+def sum_layer_moments(layer_areas, layer_distances, c, h, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+    # This function only considers the steel contributions.
     moment = 0
-    for i in range(layer_areas.shape[0]):
-        moment += layerForce(layer_areas[i], layer_distances[i], c, concrete, rebar) * (h/2 - layer_distances[i])
+    for i in range(layer_distances.shape[0]):
+        moment += layer_force(layer_areas[i], layer_distances[i], c, concrete, rebar) * (h/2 - layer_distances[i])
     return moment
 
-def PMPoints(c, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
-    if c >= h:
-        c_act = h
-    elif c <= 0:
-        c_act = 0
-    else:
-        c_act = c
-    sum_Fs = 0
-    sum_Ms = 0
-    for i in range(layer_distances.shape[0]):
-        sum_Fs += layerForce(layer_areas[i], layer_distances[i], c_act, concrete, rebar)
-        sum_Ms += layerForce(layer_areas[i], layer_distances[i], c_act, concrete, rebar) * (h/2 - layer_distances[i])
-    Cc = 0.85 * bw * (c_act * concrete.beta1) * concrete.fc
-    Mc = Cc * (h - (c_act * concrete.beta1))/2
-    P = Cc + sum_Fs
-    M = Mc + sum_Ms
+def sum_forces(c, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+    steel_force = sum_layer_forces(layer_areas, layer_distances, c, concrete, rebar)
+    concrete_force = 0.85 * bw * (min(c * concrete.beta1, h)) * concrete.fc
+    return steel_force + concrete_force
+
+def sum_moments(c, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+    steel_moment = sum_layer_moments(layer_areas, layer_distances, c, h, concrete, rebar)
+    concrete_force = 0.85 * bw * min(c * concrete.beta1, h) * concrete.fc
+    concrete_moment = concrete_force * (h - (min(c * concrete.beta1, h))) / 2
+    return steel_moment + concrete_moment       
+    
+def pm_points(c, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+    P = sum_forces(c, bw, h, layer_distances, layer_areas, concrete, rebar)
+    M = sum_moments(c, bw, h, layer_distances, layer_areas, concrete, rebar)
     return P, M
 
-def zFromP(Za, Zb, PDiff, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
-    """Find Z (relating to ey) for a given P value. Solve using the Bisection Method root finding method.
-    Calculated Pi values are shifted down by P (such that P => y = 0) to solve for it as a root.
-    The initial values of Za and Zb must result in P values above and below P argument, i.e., bound the desired Z value."""
-    
-    minTol = 0.000000000000001  # Value selected to push error just outside the data type smallest value
-    maxIter = 500  # The maximum iterations does not usually control.
-    keepRunning = True
-    n = 0
-    d = max(layer_distances)
-    tol = (Zb - Za) / 2
-   
-    while keepRunning == True:
-        ca = cFromZ(Za, d, concrete, rebar)
-        cb = cFromZ(Zb, d, concrete, rebar)
-        Pa = PMPoints(ca, bw, h, layer_distances, layer_areas, concrete, rebar)[0] - PDiff
-        Pb = PMPoints(cb, bw, h, layer_distances, layer_areas, concrete, rebar)[0] - PDiff
+#================================================================================
+#    
+#             Additional Formulae for Calculating Specific P-M Points
+#    
+#================================================================================   
 
-        Zc = (Za + Zb) / 2
-        #print(str(n).rjust(2,"0"), Zc)  # This is a debug string
-        cc = cFromZ(Zc, d, concrete, rebar)
-        Pc = PMPoints(cc, bw, h, layer_distances, layer_areas, concrete, rebar)[0] - PDiff 
-        #print(n, Pc)
+def z_at_p(p_goal, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+    
+    min_tolerance = 1e-12
+    max_iterations = 50
+    keep_running = True
+    n = 0
+
+    z_min = tens_z(concrete, rebar)
+    z_max = comp_z(rebar)
+    d = max(layer_distances)
+    tolerance = (z_max - z_min) / 2
+    
+    while keep_running == True:
+        c_min = c_from_z(z_min, d, concrete, rebar)
+        c_max = c_from_z(z_max, d, concrete, rebar)
+        p_min = sum_forces(c_min, bw, h, layer_distances, layer_areas, concrete, rebar) - p_goal
+        p_max = sum_forces(c_max, bw, h, layer_distances, layer_areas, concrete, rebar) - p_goal
         
-        if abs(Pc) == 0:
-            return Zc
-        elif np.sign(Pc) == np.sign(Pa):
-            Za = Zc
-        elif np.sign(Pc) == np.sign(Pb):
-            Zb = Zc
+        z = (z_min + z_max) / 2
+        c = c_from_z(z, d, concrete, rebar)
+        p = sum_forces(c, bw, h, layer_distances, layer_areas, concrete, rebar) - p_goal
+        
+        if np.sign(p) == 0:
+            return z
+        elif np.sign(p) == np.sign(p_min):
+            z_min = z
         else:
-            print("Error at if block.")
-        tol = (Zb - Za) / 2
+            z_max = z
+        tolerance = (z_max - z_min) / 2
         n += 1
-        if n == maxIter or tol <= minTol:
-            keepRunning = False
-    return Zc
+        if (n == max_iterations) | (tolerance <= min_tolerance):
+            keep_running = False
+    
+
+
+
 
 def zAtPureM(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     """Return Z at pure moment condition, i.e., P = 0."""
@@ -212,21 +207,21 @@ def createCList(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMater
     # First half of diagram
     
     c_0 = cAtMaxComp()  # Point 1
-    c_3 = cFromZ(0, max(layer_distances), concrete, rebar)  # Point 3
+    c_3 = c_from_z(0, max(layer_distances), concrete, rebar)  # Point 3
     
     Pmax = max_axial(bw * h, layer_areas, concrete, rebar, isTensionCase=False)
-    Zmax = zAtMaxComp()
-    Zmin = zAtMaxTension()
+    Zmax = max_z()
+    Zmin = min_z()
     z_Po = zFromP(Zmax, Zmin, 0.8 * Pmax, bw, h, layer_distances, layer_areas, concrete, rebar)
-    c_4 = cFromZ(z_Po, max(layer_distances), concrete, rebar)
-    c_5 = cFromZ(-0.5, max(layer_distances), concrete, rebar) 
-    c_6 = cFromZ(-1, max(layer_distances), concrete, rebar)
+    c_4 = c_from_z(z_Po, max(layer_distances), concrete, rebar)
+    c_5 = c_from_z(-0.5, max(layer_distances), concrete, rebar) 
+    c_6 = c_from_z(-1, max(layer_distances), concrete, rebar)
     c_8 = cFromStrain(-0.005, max(layer_distances), concrete, rebar)
     c_7 = (c_6 + c_8)/2
     Zm = zAtPureM(bw, h, layer_distances, layer_areas, concrete, rebar)
-    c_12 = cFromZ(Zm, max(layer_distances), concrete, rebar)
+    c_12 = c_from_z(Zm, max(layer_distances), concrete, rebar)
     
     
     
-    c_15 = cAtMaxTension()
+    c_15 = tens_s()
     

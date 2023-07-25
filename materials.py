@@ -1,5 +1,5 @@
 """Library of material-related functions, based on ACI 318 and US customary units (inches, pounds)"""
-__version__ = "0.0.5"
+__version__ = "0.0.6"
 
 print('materials.py <version {}> successfully imported'.format(__version__))
 
