@@ -168,16 +168,16 @@ def z_at_p(p_goal, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMa
         if (n == max_iterations) | (tolerance <= min_tolerance):
             keep_running = False
     
+def z_at_pure_m(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial)
+    return z_at_p(0, bw, h, layer_distances, layer_areas, concrete, rebar)
 
 
 
 
-def zAtPureM(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
-    """Return Z at pure moment condition, i.e., P = 0."""
-    Za = -50  # Selected to be sufficiently high.
-    Zb = 50
-    P = 0
-    return zFromP(Za, Zb, 0, bw, h, layer_distances, layer_areas, concrete, rebar)
+
+
+
+
 
 def createCList(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     """Create list of 'c' values to be used for points on the PM curve."""
