@@ -142,8 +142,8 @@ def z_at_p(p_goal, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMa
     keep_running = True
     n = 0
 
-    z_min = tens_z(concrete, rebar)
-    z_max = comp_z(rebar)
+    z_min = tens_z(rebar)
+    z_max = comp_z(concrete, rebar)
     d = max(layer_distances)
     tolerance = (z_max - z_min) / 2
     
@@ -167,8 +167,9 @@ def z_at_p(p_goal, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMa
         n += 1
         if (n == max_iterations) | (tolerance <= min_tolerance):
             keep_running = False
-    
-def z_at_pure_m(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial)
+    return z
+
+def z_at_pure_m(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     return z_at_p(0, bw, h, layer_distances, layer_areas, concrete, rebar)
 
 
