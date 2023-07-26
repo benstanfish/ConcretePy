@@ -14,28 +14,40 @@ tens_c = 0  # Pure tension condition: c = 0
 def geometric_sequence(n, initial, common_ratio):
     return initial * common_ratio ^ (n - 1)
 
-def equal_layer_distances(layer_count, 
-                          bar_diameter, 
-                          clear_cover, 
-                          total_member_depth):
-    return np.linspace(clear_cover + bar_diameter/2, 
-                       total_member_depth - clear_cover - bar_diameter/2, 
-                       layer_count)
+def equal_layer_distances(layer_count, bar_diameter, clear_cover, total_member_depth):
+    return np.linspace(clear_cover + bar_diameter/2, total_member_depth - clear_cover - bar_diameter/2, layer_count)
 
-def reverse_layers(total_member_depth, 
-                   layer_distances):
+def reverse_layers(total_member_depth, layer_distances):
     layers = layer_distances.copy()
     return np.flip(total_member_depth - layers)
 
-def max_axial(gross_area, layer_areas, 
-             concrete: mat.ConcreteMaterial, 
-             rebar: mat.RebarMaterial, 
-             isTensionCase: bool = False):
+def max_axial(gross_area, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial, isTensionCase: bool = False):
     if isTensionCase == False:
-        return (0.85 * concrete.fc) * (gross_area - np.sum(layer_areas)) + rebar.fy * np.sum(layer_areas)
+        return (0.85 * concrete.fc) * (gross_area - np.sum(layer_areas)) + rebar.fy * np.sum(layer_areas)  # Po per Eq. (22.4.2.2)
     else:
         return np.sum(layer_areas) * rebar.fy * -1
 
+def Po(gross_area, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+    return max_axial(gross_area, layer_areas, concrete, rebar, False)
+
+def Pnt(gross_area, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+    return max_axial(gross_area, layer_areas, concrete, rebar, True)
+
+def limited_compression(max_compression, isTied: bool = True):
+    # max axial per ACI 318 Table 22.4.2.1
+    coeff = 0.80
+    if isTied == False:
+       coeff = 0.85
+    return max_compression * coeff
+
+def Pn(gross_area, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial, isTied: bool = True):
+    # Maximum compression strength, Pn,max, per ACI 318 Table 22.4.2.1
+    coeff = 0.80
+    if isTied == False:
+       coeff = 0.85
+    return coeff * max_axial(gross_area, layer_areas, concrete, rebar, False)
+    
+    
 #================================================================================
 #    Using similar triangles, one can relate the concrete strain (ecu) with that
 #    in the rebar at a depth "d" and the neutral axis depth "c". Using the
@@ -182,6 +194,9 @@ def z_at_pure_m(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMater
 
 def createCList(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     """Create list of 'c' values to be used for points on the PM curve."""
+    
+
+    #   PREVIOUS GENERATION NOTES:
     #================================================================================
     #   Creates a list of "c" values for two sides of the PM diagram for columns
     #   and walls. By default it generates 25 points:
@@ -205,24 +220,53 @@ def createCList(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMater
     #   generated in the correct order (even if its different from the listing above)
     #================================================================================
     
-    # First half of diagram
+    # TODO: Revised Points
+    # Po - max compression, no eccentricity
+    # 
+    # Pn,max - per ACI 318 Table 22.4.2.1
+    #
+    # Z = 0 (no strain at d)
+    # Z = -1 (balanced failure, -fy at d) --- start of phi shift
+    #
+    # Transition region
+    # 
+    # es = -0.005 --- tension controlled limit --- end of phi shift
+    #
+    # M = 0 (x-axis)
+    # 
+    # in the tension region the curve is linear
+    #
+    # Pnt --- max tension
     
-    c_0 = cAtMaxComp()  # Point 1
-    c_3 = c_from_z(0, max(layer_distances), concrete, rebar)  # Point 3
+    
+    # First half of diagram
+    d = max(layer_distances)
+    
+    c_0 = comp_c  # Point 1
+    c_3 = c_from_z(0, d, concrete, rebar)  # Point 3
     
     Pmax = max_axial(bw * h, layer_areas, concrete, rebar, isTensionCase=False)
     Zmax = max_z()
     Zmin = min_z()
-    z_Po = zFromP(Zmax, Zmin, 0.8 * Pmax, bw, h, layer_distances, layer_areas, concrete, rebar)
-    c_4 = c_from_z(z_Po, max(layer_distances), concrete, rebar)
-    c_5 = c_from_z(-0.5, max(layer_distances), concrete, rebar) 
-    c_6 = c_from_z(-1, max(layer_distances), concrete, rebar)
-    c_8 = cFromStrain(-0.005, max(layer_distances), concrete, rebar)
+    z_Po = z_at_p(Zmax, Zmin, 0.8 * Pmax, bw, h, layer_distances, layer_areas, concrete, rebar)
+    c_4 = c_from_z(z_Po, d, concrete, rebar)
+    c_5 = c_from_z(-0.5, d, concrete, rebar) 
+    c_6 = c_from_z(-1, d, concrete, rebar)
+    
+    c_8a = c_from_strain(-0.004, d, concrete, rebar)  # Compression controlled limit
+    
+    
+    c_8 = c_from_strain(-0.005, d, concrete, rebar)  # Tension controlled limit
     c_7 = (c_6 + c_8)/2
-    Zm = zAtPureM(bw, h, layer_distances, layer_areas, concrete, rebar)
+    
+    c_8 = c_from_strain(layer_strain, d, concrete)
+    
+    Zm = z_at_pure_m(bw, h, layer_distances, layer_areas, concrete, rebar)
     c_12 = c_from_z(Zm, max(layer_distances), concrete, rebar)
     
     
-    
-    c_15 = tens_s()
+    # Second half of the diagram
+    layer_distances_reversed = reverse_layers(h, layer_distances)
+    layer_areas_reversed = np.flip(layer_areas)
+    d_reversed = max(layer_distances_reversed)
     
