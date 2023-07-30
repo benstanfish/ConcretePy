@@ -8,7 +8,7 @@ import numpy as np
 
 import materials as mat
 
-comp_c = 1e6  # Pure compression condition: c = infinity
+comp_c = 1e8  # Pure compression condition: c = infinity
 tens_c = 0  # Pure tension condition: c = 0
 
 def geometric_sequence(n, initial, common_ratio):
@@ -20,6 +20,14 @@ def equal_layer_distances(layer_count, bar_diameter, clear_cover, total_member_d
 def reverse_layers(total_member_depth, layer_distances):
     layers = layer_distances.copy()
     return np.flip(total_member_depth - layers)
+
+def rescale_to_range(value, range_min, range_max,
+                  scale_min = 0.0, scale_max = 1.0, 
+                  is_strict: bool = True):
+    rescaled_value = (value - range_min) / (range_max - range_min) * (scale_max - scale_min) + scale_min 
+    if is_strict == True:
+        rescaled_value = min(scale_max, max(scale_min, rescaled_value))
+    return rescaled_value
 
 def max_axial(gross_area, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial, isTensionCase: bool = False):
     if isTensionCase == False:
@@ -125,20 +133,20 @@ def sum_layer_moments(layer_areas, layer_distances, c, h, concrete: mat.Concrete
         moment += layer_force(layer_areas[i], layer_distances[i], c, concrete, rebar) * (h/2 - layer_distances[i])
     return moment
 
-def sum_forces(c, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+def sum_total_forces(c, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     steel_force = sum_layer_forces(layer_areas, layer_distances, c, concrete, rebar)
     concrete_force = 0.85 * bw * (min(c * concrete.beta1, h)) * concrete.fc
     return steel_force + concrete_force
 
-def sum_moments(c, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+def sum_total_moments(c, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     steel_moment = sum_layer_moments(layer_areas, layer_distances, c, h, concrete, rebar)
     concrete_force = 0.85 * bw * min(c * concrete.beta1, h) * concrete.fc
     concrete_moment = concrete_force * (h - (min(c * concrete.beta1, h))) / 2
     return steel_moment + concrete_moment       
     
 def pm_points(c, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
-    P = sum_forces(c, bw, h, layer_distances, layer_areas, concrete, rebar)
-    M = sum_moments(c, bw, h, layer_distances, layer_areas, concrete, rebar)
+    P = sum_total_forces(c, bw, h, layer_distances, layer_areas, concrete, rebar)
+    M = sum_total_moments(c, bw, h, layer_distances, layer_areas, concrete, rebar)
     return P, M
 
 #================================================================================
@@ -162,12 +170,12 @@ def z_at_p(p_goal, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMa
     while keep_running == True:
         c_min = c_from_z(z_min, d, concrete, rebar)
         c_max = c_from_z(z_max, d, concrete, rebar)
-        p_min = sum_forces(c_min, bw, h, layer_distances, layer_areas, concrete, rebar) - p_goal
-        p_max = sum_forces(c_max, bw, h, layer_distances, layer_areas, concrete, rebar) - p_goal
+        p_min = sum_total_forces(c_min, bw, h, layer_distances, layer_areas, concrete, rebar) - p_goal
+        p_max = sum_total_forces(c_max, bw, h, layer_distances, layer_areas, concrete, rebar) - p_goal
         
         z = (z_min + z_max) / 2
         c = c_from_z(z, d, concrete, rebar)
-        p = sum_forces(c, bw, h, layer_distances, layer_areas, concrete, rebar) - p_goal
+        p = sum_total_forces(c, bw, h, layer_distances, layer_areas, concrete, rebar) - p_goal
         
         if np.sign(p) == 0:
             return z
