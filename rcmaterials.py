@@ -149,6 +149,33 @@ class ConcreteSection:
         self.material = concrete        
         
     @property
+    def widths(self):
+        return self.widths
+    
+    @widths.setter
+    def widths(self, new_widths):
+        self.widths = new_widths
+        print("New region widths vector set.")
+    
+    @property
+    def heights(self):
+        return self.heights
+    
+    @heights.setter
+    def heights(self, new_heights):
+        self.heights = new_heights
+        print("New region heights vector set.")
+    
+    @property
+    def material(self):
+        return self.material
+    
+    @material.setter
+    def material(self, new_material):
+        self.material = new_material
+        print(f"New material {new_material} set.")
+    
+    @property
     def max_width(self):
         # TODO: Develop way to access appropriate width, based on compression block depth
         return max(self.widths)

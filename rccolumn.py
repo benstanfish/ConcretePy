@@ -6,7 +6,7 @@ print('concrete.py <version {}> successfully imported'.format(__version__))
 import matplotlib.pyplot as plt
 import numpy as np
 
-import materials as mat
+import rcmaterials as mat
 
 comp_c = 1e8  # Pure compression condition: c = infinity
 tens_c = 0  # Pure tension condition: c = 0
