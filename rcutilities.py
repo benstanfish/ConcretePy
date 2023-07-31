@@ -131,4 +131,5 @@ def get_distance_to_net_centroid(concrete_regions, c = math.inf):
     else:
         return moment / area
 
-print('rcutilties.py <version {}> successfully imported'.format(__version__))
+
+print(f'{__name__} <version {__version__}> successfully imported')

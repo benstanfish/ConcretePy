@@ -1,7 +1,6 @@
 """Library of material-related functions, based on ACI 318 and US customary units (inches, pounds)"""
 __version__ = "0.0.6"
-
-print('materials.py <version {}> successfully imported'.format(__version__))
+__author__ = "Ben Fisher"
 
 import numpy as np
 
@@ -229,3 +228,6 @@ class ConcreteSection:
     @property
     def radius_gyration(self):
         return sqrt(self.inertia / self.area)   
+    
+    
+print(f'{__name__} <version {__version__}> successfully imported')

@@ -1,5 +1,6 @@
 """Library of functions to create PM coordinates for creating concrete PM diagrams"""
 __version__ = "0.0.4"
+__author__ = "Ben Fisher"
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -268,6 +269,7 @@ def createCList(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMater
     d_reversed = max(layer_distances_reversed)
     
     
+    return 0
     
     
     
@@ -278,5 +280,4 @@ def createCList(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMater
     
     
     
-    
-    print('rccolumn.py <version {}> successfully imported'.format(__version__))
+print(f'{__name__} <version {__version__}> successfully imported')
