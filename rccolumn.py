@@ -199,7 +199,6 @@ def equally_spaced_positive_zs(bw, h,
     ps = np.linspace(po, p_at_z_0, points)
                            
     zs = np.zeros(points)
-    cs = np.zeros(points)
     for i in range(points):
         zs[i] = z_at_p(ps[i], bw, h, layer_distances, layer_areas, concrete, rebar)
     return zs
