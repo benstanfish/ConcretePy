@@ -187,12 +187,22 @@ def z_at_p(p_goal, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMa
 def z_at_pure_m(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     return z_at_p(0, bw, h, layer_distances, layer_areas, concrete, rebar)
 
+def equally_spaced_positive_zs(bw, h, 
+                       layer_distances, layer_areas, 
+                       concrete: mat.ConcreteMaterial, 
+                       rebar: mat.RebarMaterial, 
+                       points: int = 5):
+    po = Po(bw * h, layer_areas, concrete, rebar)
 
-
-
-
-
-
+    c_at_z_0 = c_from_z(0, max(layer_distances), concrete, rebar)
+    p_at_z_0 = pm_points(c_at_z_0, bw, h, layer_distances, layer_areas, concrete, rebar)[0]
+    ps = np.linspace(po, p_at_z_0, points)
+                           
+    zs = np.zeros(points)
+    cs = np.zeros(points)
+    for i in range(points):
+        zs[i] = z_at_p(ps[i], bw, h, layer_distances, layer_areas, concrete, rebar)
+    return zs
 
 
 def createCList(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
