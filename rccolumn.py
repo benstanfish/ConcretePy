@@ -29,6 +29,13 @@ def get_d_prime(layer_distances):
     """Return d' for the extreme compression steel layer"""
     return min(layer_distances)
 
+def get_layer_areas(layer_bar_sizes, layer_bar_counts, rebar: mat.RebarMaterial):
+    layers = layer_bar_counts.shape[0]
+    layer_areas = np.zeros(layers)
+    for i in range(layers):
+        layer_areas[i] = rebar.bar_areas[layer_bar_sizes[i]] * layer_bar_counts[i]
+    return layer_areas
+
 def get_total_steel_area(layer_areas):
     return sum(layer_areas)
 
@@ -307,10 +314,9 @@ def get_half_pm(cs, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteM
     strains = np.zeros(cs.shape[0])
     P, M, strains = pm_from_cs(cs, bw, h, layer_distances, layer_areas, concrete, rebar)
     # Need to add the tension with zero bending point:
-    P = np.append(P, Pntmax(bw * h, layer_areas, concrete, rebar))   
-    M = np.append(M, 0)
-    
-    strains = np.append(strains, rebar.eu)
+    # P = np.append(P, Pntmax(bw * h, layer_areas, concrete, rebar))   
+    # M = np.append(M, 0)
+    # strains = np.append(strains, rebar.eu)
     return P, M, strains
 
 def get_axial_moment_reduction_factor(strain_at_dt, rebar: mat.RebarMaterial, has_spirals: bool = False):
