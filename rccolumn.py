@@ -44,18 +44,19 @@ def max_axial(gross_area, layer_areas, concrete: mat.ConcreteMaterial, rebar: ma
 def Po(gross_area, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     return max_axial(gross_area, layer_areas, concrete, rebar, False)
 
-def Pnt(gross_area, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+def Pntmax(gross_area, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     return max_axial(gross_area, layer_areas, concrete, rebar, True)
 
-def capped_compression(max_compression, isTied: bool = True):
+def capped_compression(max_compression, has_spirals: bool = False, is_ch_10_composite: bool = False):
     # max axial per ACI 318 Table 22.4.2.1
+    # This function is a simplified version of Pnmax
     coeff = 0.80
-    if isTied == False:
+    if has_spirals == True | is_ch_10_composite == True:
        coeff = 0.85
     return max_compression * coeff
 
-def Pn(gross_area, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial, has_spirals: bool = False, is_ch_10_composite: bool = False):
-    # Maximum compression strength, Pn,max, per ACI 318 Table 22.4.2.1
+def Pnmax(gross_area, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial, has_spirals: bool = False, is_ch_10_composite: bool = False):
+    # Maximum compression strength, Pnmax, per ACI 318 Table 22.4.2.1
     coeff = 0.80
     if has_spirals == True | is_ch_10_composite == True:
        coeff = 0.85
@@ -205,20 +206,42 @@ def equally_spaced_positive_zs(bw, h,
                        layer_distances, layer_areas, 
                        concrete: mat.ConcreteMaterial, 
                        rebar: mat.RebarMaterial, 
-                       points: int = 5):
+                       points: int = 10, 
+                       has_spirals: bool = False, 
+                       is_ch_10_composite: bool = False):
+        
     po = Po(bw * h, layer_areas, concrete, rebar)
+
+    p_capped = Pnmax(bw * h, layer_areas, concrete, rebar, has_spirals, is_ch_10_composite)
+    # z_at_p_capped = z_at_p(p_capped, bw, h, layer_distances, layer_areas, concrete, rebar)
 
     c_at_z_0 = c_from_z(0, max(layer_distances), concrete, rebar)
     p_at_z_0 = pm_points(c_at_z_0, bw, h, layer_distances, layer_areas, concrete, rebar)[0]
-    ps = np.linspace(po, p_at_z_0, points)
+    
+    a_range_step = (po - p_capped) / 5
+    
+    ps_a = np.arange(po, p_capped, -a_range_step)
+    ps_b = np.linspace(p_capped, p_at_z_0, points - 4)    
+    ps = np.hstack((ps_a, ps_b))
                            
-    zs = np.zeros(points)
-    for i in range(points):
+    zs = np.zeros(ps.shape[0])
+    for i in range(ps.shape[0]):
         zs[i] = z_at_p(ps[i], bw, h, layer_distances, layer_areas, concrete, rebar)
     return zs
 
+def get_cs_from_zs(zs, layer_distance, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+    count = zs.shape[0]
+    cs = np.zeros(count)
+    for i in range(count):
+        cs[i] = c_from_z(zs[i], layer_distance, concrete, rebar)
+    return cs
 
-
+def get_PM_from_c_range(cs, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+    count = cs.shape[0]
+    P = np.zeros(count)
+    M = np.zeros(count)
+    for i in range(count):
+        P[i], M[i] = pm_points(cs[i], bw, h, layer_distances, layer_areas, concrete, rebar)
 
 
 
@@ -254,7 +277,7 @@ def createCList(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMater
     # TODO: Revised Points
     # Po - max compression, no eccentricity
     # 
-    # Pn,max - per ACI 318 Table 22.4.2.1
+    # Pnmax - per ACI 318 Table 22.4.2.1
     #
     # Z = 0 (no strain at d)
     # Z = -1 (balanced failure, -fy at d) --- start of phi shift
@@ -267,7 +290,7 @@ def createCList(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMater
     # 
     # in the tension region the curve is linear
     #
-    # Pnt --- max tension
+    # Pntmax --- max tension
     
     
     # First half of diagram
