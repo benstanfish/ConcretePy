@@ -1,8 +1,6 @@
 """Library of functions to create PM coordinates for creating concrete PM diagrams"""
 __version__ = "0.0.4"
 
-print('concrete.py <version {}> successfully imported'.format(__version__))
-
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -11,9 +9,6 @@ import rcmaterials as mat
 comp_c = 1e8  # Pure compression condition: c = infinity
 tens_c = 0  # Pure tension condition: c = 0
 
-def geometric_sequence(n, initial, common_ratio):
-    return initial * common_ratio ^ (n - 1)
-
 def equal_layer_distances(layer_count, bar_diameter, clear_cover, total_member_depth):
     return np.linspace(clear_cover + bar_diameter/2, total_member_depth - clear_cover - bar_diameter/2, layer_count)
 
@@ -21,13 +16,7 @@ def reverse_layers(total_member_depth, layer_distances):
     layers = layer_distances.copy()
     return np.flip(total_member_depth - layers)
 
-def rescale_to_range(value, range_min, range_max,
-                  scale_min = 0.0, scale_max = 1.0, 
-                  is_strict: bool = True):
-    rescaled_value = (value - range_min) / (range_max - range_min) * (scale_max - scale_min) + scale_min 
-    if is_strict == True:
-        rescaled_value = min(scale_max, max(scale_min, rescaled_value))
-    return rescaled_value
+
 
 def max_axial(gross_area, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial, isTensionCase: bool = False):
     if isTensionCase == False:
@@ -278,3 +267,16 @@ def createCList(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMater
     layer_areas_reversed = np.flip(layer_areas)
     d_reversed = max(layer_distances_reversed)
     
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    print('rccolumn.py <version {}> successfully imported'.format(__version__))
