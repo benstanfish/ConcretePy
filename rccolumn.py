@@ -200,7 +200,7 @@ def pm_from_cs(cs, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMa
 #    
 #================================================================================   
 
-def z_at_p(p_goal, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+def get_z_at_p(p_goal, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     
     min_tolerance = 1e-12
     max_iterations = 50
@@ -234,10 +234,10 @@ def z_at_p(p_goal, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMa
             keep_running = False
     return z
 
-def z_at_pure_m(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
-    return z_at_p(0, bw, h, layer_distances, layer_areas, concrete, rebar)
+def get_z_at_pure_m(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+    return get_z_at_p(0, bw, h, layer_distances, layer_areas, concrete, rebar)
 
-def positive_zs(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, 
+def get_positive_zs(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, 
                        rebar: mat.RebarMaterial, 
                        points: int = 10, 
                        has_spirals: bool = False, 
@@ -246,7 +246,7 @@ def positive_zs(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMater
     po = Po(bw * h, layer_areas, concrete, rebar)
 
     p_capped = Pnmax(bw * h, layer_areas, concrete, rebar, has_spirals, is_ch_10_composite)
-    # z_at_p_capped = z_at_p(p_capped, bw, h, layer_distances, layer_areas, concrete, rebar)
+    # z_at_p_capped = get_z_at_p(p_capped, bw, h, layer_distances, layer_areas, concrete, rebar)
 
     c_at_z_0 = c_from_z(0, max(layer_distances), concrete, rebar)
     p_at_z_0 = pm_points(c_at_z_0, bw, h, layer_distances, layer_areas, concrete, rebar)[0]
@@ -262,13 +262,13 @@ def positive_zs(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMater
         zs[i] = z_at_p(ps[i], bw, h, layer_distances, layer_areas, concrete, rebar)
     return zs
 
-def zs_from_zero_to_pure_m(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+def get_zs_from_zero_to_pure_m(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     """Create a list/array of z values from z = 0, through balanced failure, to tension control limit, to pure bending"""    
     cardinal_z_values = np.array([-0.125, -0.25, - 0.375, -0.5, -0.625, -0.75, -0.875, -1])
     cardinal_strains = np.arange(-0.0030, -0.006, -0.001)
     zs_from_cardinal_strains = zs_from_strains(cardinal_strains, rebar)
     
-    z_Mmax = z_at_pure_m(bw, h, layer_distances, layer_areas, concrete, rebar)
+    z_Mmax = get_z_at_pure_m(bw, h, layer_distances, layer_areas, concrete, rebar)
     
     last_region_points = 5
     last_region_spaces = last_region_points - 1
@@ -278,27 +278,27 @@ def zs_from_zero_to_pure_m(bw, h, layer_distances, layer_areas, concrete: mat.Co
     last_region_zs = np.linspace(zs_from_cardinal_strains[-1] - step_distance, z_Mmax, last_region_points)
     return np.flip(np.sort(np.hstack((cardinal_z_values, zs_from_cardinal_strains, last_region_zs))))
     
-def zs_in_tension_region(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+def get_zs_in_tension_region(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     # TODO: need to figure out how to get Pnt in terms of z as z_from_p() doesn't appear to work in tension region.
-    z_mmax = z_at_pure_m(bw, h, layer_distances, layer_areas, concrete, rebar)
+    z_mmax = get_z_at_pure_m(bw, h, layer_distances, layer_areas, concrete, rebar)
     z_min = min_z(rebar)
     
     point_count = 7
     # TODO: The following return is a stop-gap, I'd like to have a better way to distribute over the tension region.
     return np.append(np.geomspace(z_mmax, (z_min + (z_mmax - z_min) / (point_count)) / 4, point_count), z_min)
 
-def get_hemisphere_zs(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial, 
+def get_half_zs(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial, 
                 points: int = 10, has_spirals: bool = False, is_ch_10_composite: bool = False):
-    zs_positive = positive_zs(bw, h, layer_distances, layer_areas, concrete, 
+    zs_positive = get_positive_zs(bw, h, layer_distances, layer_areas, concrete, 
                        rebar, points, has_spirals, is_ch_10_composite)
-    zs_region_2 = zs_from_zero_to_pure_m(bw, h, layer_distances, layer_areas, concrete, rebar)
-    zs_tension = zs_in_tension_region(bw, h, layer_distances, layer_areas, concrete, rebar)
+    zs_region_2 = get_zs_from_zero_to_pure_m(bw, h, layer_distances, layer_areas, concrete, rebar)
+    zs_tension = get_zs_in_tension_region(bw, h, layer_distances, layer_areas, concrete, rebar)
     return np.hstack((zs_positive, zs_region_2, zs_tension))
     
-def get_hemisphere_cs(zs, layer_distance, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+def get_half_cs(zs, layer_distance, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     return cs_from_zs(zs, layer_distance, concrete, rebar)
     
-def get_hemisphere_pm(cs, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+def get_half_pm(cs, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     P = np.zeros(cs.shape[0])
     M = np.zeros(cs.shape[0])
     P, M = pm_from_cs(cs, bw, h, layer_distances, layer_areas, concrete, rebar)
@@ -306,5 +306,19 @@ def get_hemisphere_pm(cs, bw, h, layer_distances, layer_areas, concrete: mat.Con
     P = np.append(P, Pntmax(bw * h, layer_areas, concrete, rebar))   
     M = np.append(M, 0)
     return P, M
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 print(f'{__name__} <version {__version__}> successfully imported')
