@@ -183,6 +183,7 @@ def pm_from_cs(cs, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMa
     M = np.zeros(count)
     for i in range(count):
         P[i], M[i] = pm_points(cs[i], bw, h, layer_distances, layer_areas, concrete, rebar)
+    return P, M
 
 #================================================================================
 #    
@@ -254,13 +255,13 @@ def positive_zs(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMater
 
 def zs_from_zero_to_pure_m(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     """Create a list/array of z values from z = 0, through balanced failure, to tension control limit, to pure bending"""    
-    cardinal_z_values = np.array([-0.125, -0.25, -0.5, -0.75, -1])
-    cardinal_strains = np.arange(-0.0030, -0.00505, -0.0001)
+    cardinal_z_values = np.array([-0.125, -0.25, - 0.375, -0.5, -0.625, -0.75, -0.875, -1])
+    cardinal_strains = np.arange(-0.0030, -0.006, -0.001)
     zs_from_cardinal_strains = zs_from_strains(cardinal_strains, rebar)
     
     z_Mmax = z_at_pure_m(bw, h, layer_distances, layer_areas, concrete, rebar)
     
-    last_region_points = 9
+    last_region_points = 5
     last_region_spaces = last_region_points - 1
     distance = zs_from_cardinal_strains[-1] - z_Mmax
     step_distance = distance / last_region_spaces
@@ -273,15 +274,12 @@ def zs_in_tension_region(bw, h, layer_distances, layer_areas, concrete: mat.Conc
     z_mmax = z_at_pure_m(bw, h, layer_distances, layer_areas, concrete, rebar)
     z_min = min_z(rebar)
     
-    point_count = 9
-    distance = z_mmax - z_min
-    spaces = point_count - 1
-    step_distance = - distance / spaces
-    return np.linspace(z_mmax + step_distance, z_min, point_count)
+    point_count = 7
+    # TODO: The following return is a stop-gap, I'd like to have a better way to distribute over the tension region.
+    return np.append(np.geomspace(z_mmax, (z_min + (z_mmax - z_min) / (point_count)) / 4, point_count), z_min)
 
 def get_hemisphere_zs(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial, 
-                points: int = 10, has_spirals: bool = False, is_ch_10_composite: bool = False)
-
+                points: int = 10, has_spirals: bool = False, is_ch_10_composite: bool = False):
     zs_positive = positive_zs(bw, h, layer_distances, layer_areas, concrete, 
                        rebar, points, has_spirals, is_ch_10_composite)
     zs_region_2 = zs_from_zero_to_pure_m(bw, h, layer_distances, layer_areas, concrete, rebar)
@@ -292,99 +290,12 @@ def get_hemisphere_cs(zs, layer_distance, concrete: mat.ConcreteMaterial, rebar:
     return cs_from_zs(zs, layer_distance, concrete, rebar)
     
 def get_hemisphere_pm(cs, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
-    return pm_from_cs(cs, bw, h, layer_distances, layer_areas, concrete, rebar)    
-    
-    
-##### Below function will be deprecated ##### 
-    
-def createCList(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
-    """Create list of 'c' values to be used for points on the PM curve."""
-    
+    P = np.zeros(cs.shape[0])
+    M = np.zeros(cs.shape[0])
+    P, M = pm_from_cs(cs, bw, h, layer_distances, layer_areas, concrete, rebar)
+    # Need to add the tension with zero bending point:
+    P = np.append(P, Pntmax(bw * h, layer_areas, concrete, rebar))   
+    M = np.append(M, 0)
+    return P, M
 
-    #   PREVIOUS GENERATION NOTES:
-    #================================================================================
-    #   Creates a list of "c" values for two sides of the PM diagram for columns
-    #   and walls. By default it generates 25 points:
-    #   1 and 25 - maximum compression
-    #   2 and 24 - half way between Pmax and Z = 0
-    #   3 and 23 - Z = 0 (es = 0)
-    #   4 and 22 - Po, axial compression at 80% of Pmax
-    #   5 and 21 - Z = -0.5 (es = 50% fy)
-    #   6 and 20 - balanced failure (Z = -1)
-    #   7, 19 - Half way between comp and tension control limits
-    #   8 and 18 - es = -0.005 (tension control limit)
-    #   9-11, 15-17 - three points from tens control to pure moment separated by the
-    #                 geometric sequence (to give a good distribution)
-    #   12, 14 - pure moment
-    #   15 - pure tension
-    #
-    #   The list is a numpy array, that includes the full 360° rotation. The first
-    #   half of the list is negative flexure, the back half is positive flexure.
-    #   These two halves are generated as two separated arrays, sorted in opposite
-    #   order, then combined into one. This ensures that the PM coordinates are 
-    #   generated in the correct order (even if its different from the listing above)
-    #================================================================================
-    
-    # TODO: Revised Points
-    # Po - max compression, no eccentricity
-    # 
-    # Pnmax - per ACI 318 Table 22.4.2.1
-    #
-    # Z = 0 (no strain at d)
-    # Z = -1 (balanced failure, -fy at d) --- start of phi shift
-    #
-    # Transition region
-    # 
-    # es = -0.005 --- tension controlled limit --- end of phi shift
-    #
-    # M = 0 (x-axis)
-    # 
-    # in the tension region the curve is linear
-    #
-    # Pntmax --- max tension
-    
-    
-    # First half of diagram
-    d = max(layer_distances)
-    
-    c_0 = CCOMP  # Point 1
-    c_3 = c_from_z(0, d, concrete, rebar)  # Point 3
-    
-    Pmax = max_axial(bw * h, layer_areas, concrete, rebar, isTensionCase=False)
-    Zmax = max_z()
-    Zmin = min_z()
-    z_Po = z_at_p(Zmax, Zmin, 0.8 * Pmax, bw, h, layer_distances, layer_areas, concrete, rebar)
-    c_4 = c_from_z(z_Po, d, concrete, rebar)
-    c_5 = c_from_z(-0.5, d, concrete, rebar) 
-    c_6 = c_from_z(-1, d, concrete, rebar)
-    
-    c_8a = c_from_strain(-0.004, d, concrete, rebar)  # Compression controlled limit
-    
-    
-    c_8 = c_from_strain(-0.005, d, concrete, rebar)  # Tension controlled limit
-    c_7 = (c_6 + c_8)/2
-    
-    c_8 = c_from_strain(layer_strain, d, concrete)
-    
-    Zm = z_at_pure_m(bw, h, layer_distances, layer_areas, concrete, rebar)
-    c_12 = c_from_z(Zm, max(layer_distances), concrete, rebar)
-    
-    
-    # Second half of the diagram
-    layer_distances_reversed = reverse_layers(h, layer_distances)
-    layer_areas_reversed = np.flip(layer_areas)
-    d_reversed = max(layer_distances_reversed)
-    
-    
-    return 0
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
 print(f'{__name__} <version {__version__}> successfully imported')
