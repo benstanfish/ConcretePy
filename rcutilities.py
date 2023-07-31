@@ -1,6 +1,8 @@
 """Library of general functions for cleaning and preparing data."""
 __version__ = "0.0.1"
 __author__ = "Ben Fisher"
+#__all__ = ['get_list_dimensions', 'is_list', 'to_numpy', 'rescale_value']
+
 
 import numpy as np
 

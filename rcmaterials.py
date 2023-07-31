@@ -2,6 +2,7 @@
 __version__ = "0.0.6"
 __author__ = "Ben Fisher"
 
+
 import numpy as np
 
 from math import sqrt
