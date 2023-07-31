@@ -2,13 +2,17 @@
 __version__ = "0.0.4"
 __author__ = "Ben Fisher"
 
+import math
+
 import matplotlib.pyplot as plt
 import numpy as np
 
 import rcmaterials as mat
 
-comp_c = 1e8  # Pure compression condition: c = infinity
-tens_c = 0  # Pure tension condition: c = 0
+CMAX = math.inf  # Pure compression condition: c = infinity
+CCOMP = math.inf  # Pure compression condition: c = infinity
+CMIN = 0  # Pure tension condition: c = 0
+CTENS = 0  # Pure tension condition: c = 0
 
 def equal_layer_distances(layer_count, bar_diameter, clear_cover, total_member_depth):
     return np.linspace(clear_cover + bar_diameter/2, total_member_depth - clear_cover - bar_diameter/2, layer_count)
@@ -16,8 +20,6 @@ def equal_layer_distances(layer_count, bar_diameter, clear_cover, total_member_d
 def reverse_layers(total_member_depth, layer_distances):
     layers = layer_distances.copy()
     return np.flip(total_member_depth - layers)
-
-
 
 def max_axial(gross_area, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial, isTensionCase: bool = False):
     if isTensionCase == False:
@@ -31,7 +33,7 @@ def Po(gross_area, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.Rebar
 def Pnt(gross_area, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     return max_axial(gross_area, layer_areas, concrete, rebar, True)
 
-def limited_compression(max_compression, isTied: bool = True):
+def capped_compression(max_compression, isTied: bool = True):
     # max axial per ACI 318 Table 22.4.2.1
     coeff = 0.80
     if isTied == False:
@@ -74,13 +76,13 @@ def z_from_c(c, layer_distance, concrete: mat.ConcreteMaterial, rebar: mat.Rebar
 
 def c_from_z(z, layer_distance, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     if z * rebar.ey == concrete.ecu:
-        return comp_c
+        return CCOMP
     else:
         return max(layer_distance / (1 - (z * rebar.ey / concrete.ecu)), 0)
 
 def c_from_strain(layer_strain, layer_distance, concrete: mat.ConcreteMaterial):
     if layer_strain == concrete.ecu:
-        return comp_c
+        return CCOMP
     else:
         return layer_distance / (1 - (layer_strain / concrete.ecu))
 
@@ -93,6 +95,9 @@ def c_from_strain(layer_strain, layer_distance, concrete: mat.ConcreteMaterial):
 def layer_strain(layer_distance, c, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     if c == 0:
         return rebar.eu
+    elif c == math.inf:
+        # This case is necessary to prevent returning an "nan" error.
+        return concrete.ecu
     else:
         return (c - layer_distance) * concrete.ecu / c
 
@@ -240,7 +245,7 @@ def createCList(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMater
     # First half of diagram
     d = max(layer_distances)
     
-    c_0 = comp_c  # Point 1
+    c_0 = CCOMP  # Point 1
     c_3 = c_from_z(0, d, concrete, rebar)  # Point 3
     
     Pmax = max_axial(bw * h, layer_areas, concrete, rebar, isTensionCase=False)

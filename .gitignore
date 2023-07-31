@@ -8,4 +8,4 @@ stash/*
 
 *.pyc
 *.csv
-.ipynb
+!.ipynb
