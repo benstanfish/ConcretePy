@@ -177,6 +177,13 @@ def pm_points(c, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMate
     M = sum_total_moments(c, bw, h, layer_distances, layer_areas, concrete, rebar)
     return P, M
 
+def pm_from_cs(cs, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+    count = cs.shape[0]
+    P = np.zeros(count)
+    M = np.zeros(count)
+    for i in range(count):
+        P[i], M[i] = pm_points(cs[i], bw, h, layer_distances, layer_areas, concrete, rebar)
+
 #================================================================================
 #    
 #             Additional Formulae for Calculating Specific P-M Points
@@ -220,9 +227,7 @@ def z_at_p(p_goal, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMa
 def z_at_pure_m(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     return z_at_p(0, bw, h, layer_distances, layer_areas, concrete, rebar)
 
-def equally_spaced_positive_zs(bw, h, 
-                       layer_distances, layer_areas, 
-                       concrete: mat.ConcreteMaterial, 
+def positive_zs(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, 
                        rebar: mat.RebarMaterial, 
                        points: int = 10, 
                        has_spirals: bool = False, 
@@ -247,13 +252,6 @@ def equally_spaced_positive_zs(bw, h,
         zs[i] = z_at_p(ps[i], bw, h, layer_distances, layer_areas, concrete, rebar)
     return zs
 
-def pm_from_c_range(cs, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
-    count = cs.shape[0]
-    P = np.zeros(count)
-    M = np.zeros(count)
-    for i in range(count):
-        P[i], M[i] = pm_points(cs[i], bw, h, layer_distances, layer_areas, concrete, rebar)
-
 def zs_from_zero_to_pure_m(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     """Create a list/array of z values from z = 0, through balanced failure, to tension control limit, to pure bending"""    
     cardinal_z_values = np.array([-0.125, -0.25, -0.5, -0.75, -1])
@@ -270,7 +268,35 @@ def zs_from_zero_to_pure_m(bw, h, layer_distances, layer_areas, concrete: mat.Co
     last_region_zs = np.linspace(zs_from_cardinal_strains[-1] - step_distance, z_Mmax, last_region_points)
     return np.flip(np.sort(np.hstack((cardinal_z_values, zs_from_cardinal_strains, last_region_zs))))
     
+def zs_in_tension_region(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+    # TODO: need to figure out how to get Pnt in terms of z as z_from_p() doesn't appear to work in tension region.
+    z_mmax = z_at_pure_m(bw, h, layer_distances, layer_areas, concrete, rebar)
+    z_min = min_z(rebar)
+    
+    point_count = 9
+    distance = z_mmax - z_min
+    spaces = point_count - 1
+    step_distance = - distance / spaces
+    return np.linspace(z_mmax + step_distance, z_min, point_count)
 
+def get_hemisphere_zs(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial, 
+                points: int = 10, has_spirals: bool = False, is_ch_10_composite: bool = False)
+
+    zs_positive = positive_zs(bw, h, layer_distances, layer_areas, concrete, 
+                       rebar, points, has_spirals, is_ch_10_composite)
+    zs_region_2 = zs_from_zero_to_pure_m(bw, h, layer_distances, layer_areas, concrete, rebar)
+    zs_tension = zs_in_tension_region(bw, h, layer_distances, layer_areas, concrete, rebar)
+    return np.hstack((zs_positive, zs_region_2, zs_tension))
+    
+def get_hemisphere_cs(zs, layer_distance, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+    return cs_from_zs(zs, layer_distance, concrete, rebar)
+    
+def get_hemisphere_pm(cs, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+    return pm_from_cs(cs, bw, h, layer_distances, layer_areas, concrete, rebar)    
+    
+    
+##### Below function will be deprecated ##### 
+    
 def createCList(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     """Create list of 'c' values to be used for points on the PM curve."""
     
