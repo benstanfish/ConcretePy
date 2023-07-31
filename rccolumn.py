@@ -21,6 +21,20 @@ def reverse_layers(total_member_depth, layer_distances):
     layers = layer_distances.copy()
     return np.flip(total_member_depth - layers)
 
+def get_d(layer_distances):
+    """Return d for the extreme tension steel layer"""
+    return max(layer_distances)
+
+def get_d_prime(layer_distances):
+    """Return d' for the extreme compression steel layer"""
+    return min(layer_distances)
+
+def get_total_steel_area(layer_areas):
+    return sum(layer_areas)
+
+def column_reinforcement_ratio(concrete_gross_area, layer_areas):
+    return sum(layer_areas) / concrete_gross_area
+
 def max_axial(gross_area, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial, isTensionCase: bool = False):
     if isTensionCase == False:
         return (0.85 * concrete.fc) * (gross_area - np.sum(layer_areas)) + rebar.fy * np.sum(layer_areas)  # Po per Eq. (22.4.2.2)
@@ -40,12 +54,12 @@ def capped_compression(max_compression, isTied: bool = True):
        coeff = 0.85
     return max_compression * coeff
 
-def Pn(gross_area, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial, isTied: bool = True):
+def Pn(gross_area, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial, has_spirals: bool = False, is_ch_10_composite: bool = False):
     # Maximum compression strength, Pn,max, per ACI 318 Table 22.4.2.1
     coeff = 0.80
-    if isTied == False:
+    if has_spirals == True | is_ch_10_composite == True:
        coeff = 0.85
-    return coeff * max_axial(gross_area, layer_areas, concrete, rebar, False)
+    return coeff * max_axial(gross_area, layer_areas, concrete, rebar, isTensionCase = False)
     
     
 #================================================================================
@@ -199,10 +213,14 @@ def equally_spaced_positive_zs(bw, h,
     ps = np.linspace(po, p_at_z_0, points)
                            
     zs = np.zeros(points)
-    cs = np.zeros(points)
     for i in range(points):
         zs[i] = z_at_p(ps[i], bw, h, layer_distances, layer_areas, concrete, rebar)
     return zs
+
+
+
+
+
 
 
 def createCList(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
