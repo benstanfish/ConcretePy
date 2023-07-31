@@ -184,15 +184,18 @@ def sum_total_moments(c, bw, h, layer_distances, layer_areas, concrete: mat.Conc
 def pm_points(c, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     P = sum_total_forces(c, bw, h, layer_distances, layer_areas, concrete, rebar)
     M = sum_total_moments(c, bw, h, layer_distances, layer_areas, concrete, rebar)
-    return P, M
+    d = max(layer_distances)
+    strain_at_d = strain_from_c(c, d, concrete, rebar)
+    return P, M, strain_at_d
 
 def pm_from_cs(cs, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     count = cs.shape[0]
     P = np.zeros(count)
     M = np.zeros(count)
+    strains = np.zeros(count)
     for i in range(count):
-        P[i], M[i] = pm_points(cs[i], bw, h, layer_distances, layer_areas, concrete, rebar)
-    return P, M
+        P[i], M[i], strains[i] = pm_points(cs[i], bw, h, layer_distances, layer_areas, concrete, rebar)
+    return P, M, strains
 
 #================================================================================
 #    
@@ -259,7 +262,7 @@ def get_positive_zs(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteM
                            
     zs = np.zeros(ps.shape[0])
     for i in range(ps.shape[0]):
-        zs[i] = z_at_p(ps[i], bw, h, layer_distances, layer_areas, concrete, rebar)
+        zs[i] = get_z_at_p(ps[i], bw, h, layer_distances, layer_areas, concrete, rebar)
     return zs
 
 def get_zs_from_zero_to_pure_m(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
@@ -301,24 +304,47 @@ def get_half_cs(zs, layer_distance, concrete: mat.ConcreteMaterial, rebar: mat.R
 def get_half_pm(cs, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     P = np.zeros(cs.shape[0])
     M = np.zeros(cs.shape[0])
-    P, M = pm_from_cs(cs, bw, h, layer_distances, layer_areas, concrete, rebar)
+    strains = np.zeros(cs.shape[0])
+    P, M, strains = pm_from_cs(cs, bw, h, layer_distances, layer_areas, concrete, rebar)
     # Need to add the tension with zero bending point:
     P = np.append(P, Pntmax(bw * h, layer_areas, concrete, rebar))   
     M = np.append(M, 0)
-    return P, M
+    
+    strains = np.append(strains, rebar.eu)
+    return P, M, strains
 
+def get_axial_moment_reduction_factor(strain_at_dt, rebar: mat.RebarMaterial, has_spirals: bool = False):
+    """Return phi factor per ACI 318 Table 21.2.2 for axial, moment or axial + moment strength reduction factor"""
+    phi_tens = 0.9
+    phi_comp = 0.75 if has_spirals == True else 0.65
+    coeff = 0.15 if has_spirals == True else 0.25
+    return max(min(phi_comp + coeff * (strain_at_dt - -rebar.ey) / (-0.005 - -rebar.ey), phi_tens), phi_comp)
 
+def get_multiple_axial_moment_reduction_factors(strains, rebar: mat.RebarMaterial, has_spirals: bool = False):
+    count = strains.shape[0]
+    phis = np.zeros(count)
+    for i in range(count):
+        phis[i] = get_axial_moment_reduction_factor(strains[i], rebar, has_spirals)
+    return phis
 
+def get_design_pm_points(cs, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial, has_spirals: bool = False, is_capped: bool = True):
+    ps, ms, strains = get_half_pm(cs, bw, h, layer_distances, layer_areas, concrete, rebar)
+    if is_capped == True:
+        pnmax = Pnmax(bw * h, layer_areas, concrete, rebar)
+        for i in range(ps.shape[0]):
+            ps[i] = min(ps[i], pnmax)
+    phis = get_multiple_axial_moment_reduction_factors(strains, rebar, has_spirals)
+    design_ps = ps * phis
+    design_ms = ms * phis
+    return design_ps, design_ms
 
-
-
-
-
-
-
-
-
-
-
+def get_capped_design_pm_points(cs, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial, has_spirals: bool = False):
+    ps, ms = get_design_pm_points(cs, bw, h, layer_distances, layer_areas, concrete, rebar, has_spirals, is_capped = False)
+    po = Po(bw * h, layer_areas, concrete, rebar)
+    phi_comp = 0.75 if has_spirals == True else 0.65
+    p_capped = capped_compression(po, has_spirals, is_ch_10_composite = False) * phi_comp
+    indices = np.where(ps >= p_capped)
+    indices = np.append(indices, max(indices[0]) + 1)
+    return ps[indices], ms[indices]
 
 print(f'{__name__} <version {__version__}> successfully imported')

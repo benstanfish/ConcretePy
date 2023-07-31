@@ -6,6 +6,9 @@ __author__ = "Ben Fisher"
 import math
 import numpy as np
 
+def limit_min_max(value, min_limit, max_limit):
+    return max(min(value, max_limit), min_limit)
+
 def get_list_dimensions(my_list):
     """Use numpy to get the shape of a python list"""
     if type(my_list) == list:
