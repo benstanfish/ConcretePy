@@ -119,6 +119,15 @@ def zs_from_strains(strains, rebar: mat.RebarMaterial):
         zs[i] = strains[i] / rebar.ey
     return zs
 
+def strain_from_c(c, layer_distance,  concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+    if c == 0:
+        return rebar.eu
+    else:
+        return concrete.ecu * (1 - layer_distance / c)
+
+def strain_from_z(z, rebar: mat.RebarMaterial):
+    return z * rebar.ey
+
 #================================================================================
 #    
 #                Formulae for calculating individual P-M points
