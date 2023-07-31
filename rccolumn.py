@@ -101,6 +101,24 @@ def c_from_strain(layer_strain, layer_distance, concrete: mat.ConcreteMaterial):
     else:
         return layer_distance / (1 - (layer_strain / concrete.ecu))
 
+def cs_from_zs(zs, layer_distance, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+    count = zs.shape[0]
+    cs = np.zeros(count)
+    for i in range(count):
+        cs[i] = c_from_z(zs[i], layer_distance, concrete, rebar)
+    return cs
+
+def z_from_strain(strain, rebar: mat.RebarMaterial):
+    return strain / rebar.ey
+
+def zs_from_strains(strains, rebar: mat.RebarMaterial):
+    """Batch create array of zs from array of strains"""
+    count = strains.shape[0]
+    zs = np.zeros(count)
+    for i in range(count):
+        zs[i] = strains[i] / rebar.ey
+    return zs
+
 #================================================================================
 #    
 #                Formulae for calculating individual P-M points
@@ -229,22 +247,29 @@ def equally_spaced_positive_zs(bw, h,
         zs[i] = z_at_p(ps[i], bw, h, layer_distances, layer_areas, concrete, rebar)
     return zs
 
-def get_cs_from_zs(zs, layer_distance, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
-    count = zs.shape[0]
-    cs = np.zeros(count)
-    for i in range(count):
-        cs[i] = c_from_z(zs[i], layer_distance, concrete, rebar)
-    return cs
-
-def get_PM_from_c_range(cs, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+def pm_from_c_range(cs, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     count = cs.shape[0]
     P = np.zeros(count)
     M = np.zeros(count)
     for i in range(count):
         P[i], M[i] = pm_points(cs[i], bw, h, layer_distances, layer_areas, concrete, rebar)
 
-
-
+def zs_from_zero_to_pure_m(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+    """Create a list/array of z values from z = 0, through balanced failure, to tension control limit, to pure bending"""    
+    cardinal_z_values = np.array([-0.125, -0.25, -0.5, -0.75, -1])
+    cardinal_strains = np.arange(-0.0030, -0.00505, -0.0001)
+    zs_from_cardinal_strains = zs_from_strains(cardinal_strains, rebar)
+    
+    z_Mmax = z_at_pure_m(bw, h, layer_distances, layer_areas, concrete, rebar)
+    
+    last_region_points = 9
+    last_region_spaces = last_region_points - 1
+    distance = zs_from_cardinal_strains[-1] - z_Mmax
+    step_distance = distance / last_region_spaces
+    
+    last_region_zs = np.linspace(zs_from_cardinal_strains[-1] - step_distance, z_Mmax, last_region_points)
+    return np.flip(np.sort(np.hstack((cardinal_z_values, zs_from_cardinal_strains, last_region_zs))))
+    
 
 def createCList(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     """Create list of 'c' values to be used for points on the PM curve."""
