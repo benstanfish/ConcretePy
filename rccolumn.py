@@ -295,7 +295,10 @@ def get_zs_in_tension_region(bw, h, layer_distances, layer_areas, concrete: mat.
     
     point_count = 7
     # TODO: The following return is a stop-gap, I'd like to have a better way to distribute over the tension region.
-    return np.append(np.geomspace(z_mmax, (z_min + (z_mmax - z_min) / (point_count)) / 4, point_count), z_min)
+    #return np.append(np.geomspace(z_mmax, (z_min + (z_mmax - z_min) / (point_count)) / 4, point_count), z_min)
+
+    # Basically need to artificially inflate the z_min value in order to get c_min closer to -math.inf
+    return z_min * 100  #
 
 def get_half_zs(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial, 
                 points: int = 10, has_spirals: bool = False, is_ch_10_composite: bool = False):
@@ -313,10 +316,6 @@ def get_half_pm(cs, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteM
     M = np.zeros(cs.shape[0])
     strains = np.zeros(cs.shape[0])
     P, M, strains = pm_from_cs(cs, bw, h, layer_distances, layer_areas, concrete, rebar)
-    # Need to add the tension with zero bending point:
-    # M = np.append(M, 0)
-    # P = np.append(P, Pntmax(bw * h, layer_areas, concrete, rebar))   
-    # strains = np.append(strains, rebar.eu)
     return P, M, strains
 
 def get_axial_moment_reduction_factor(strain_at_dt, rebar: mat.RebarMaterial, has_spirals: bool = False):
@@ -344,14 +343,7 @@ def get_design_pm_points(cs, bw, h, layer_distances, layer_areas, concrete: mat.
     design_ms = ms * phis
     return design_ps, design_ms
 
-def get_capped_design_pm_points(cs, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial, has_spirals: bool = False):
-    ps, ms = get_design_pm_points(cs, bw, h, layer_distances, layer_areas, concrete, rebar, has_spirals, is_capped = False)
-    po = Po(bw * h, layer_areas, concrete, rebar)
-    phi_comp = 0.75 if has_spirals == True else 0.65
-    p_capped = capped_compression(po, has_spirals, is_ch_10_composite = False) * phi_comp
-    indices = np.where(ps >= p_capped)
-    indices = np.append(indices, max(indices[0]) + 1)
-    return ps[indices], ms[indices]
+
 
 
 
