@@ -314,8 +314,8 @@ def get_half_pm(cs, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteM
     strains = np.zeros(cs.shape[0])
     P, M, strains = pm_from_cs(cs, bw, h, layer_distances, layer_areas, concrete, rebar)
     # Need to add the tension with zero bending point:
-    # P = np.append(P, Pntmax(bw * h, layer_areas, concrete, rebar))   
     # M = np.append(M, 0)
+    # P = np.append(P, Pntmax(bw * h, layer_areas, concrete, rebar))   
     # strains = np.append(strains, rebar.eu)
     return P, M, strains
 
