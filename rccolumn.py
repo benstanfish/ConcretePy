@@ -311,7 +311,7 @@ def get_half_zs(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMater
 def get_half_cs(zs, layer_distance, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     return cs_from_zs(zs, layer_distance, concrete, rebar)
     
-def get_half_pm(cs, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
+def get_half_pm_points(cs, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     P = np.zeros(cs.shape[0])
     M = np.zeros(cs.shape[0])
     strains = np.zeros(cs.shape[0])
@@ -333,7 +333,7 @@ def get_multiple_axial_moment_reduction_factors(strains, rebar: mat.RebarMateria
     return phis
 
 def get_design_pm_points(cs, bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial, has_spirals: bool = False, is_capped: bool = True):
-    ps, ms, strains = get_half_pm(cs, bw, h, layer_distances, layer_areas, concrete, rebar)
+    ps, ms, strains = get_half_pm_points(cs, bw, h, layer_distances, layer_areas, concrete, rebar)
     if is_capped == True:
         pnmax = Pnmax(bw * h, layer_areas, concrete, rebar)
         for i in range(ps.shape[0]):
