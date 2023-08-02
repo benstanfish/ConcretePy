@@ -92,7 +92,7 @@ def tens_z(rebar: mat.RebarMaterial):
 
 def z_from_c(c, layer_distance, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     if c == 0:
-        return max_z(concrete, rebar)
+        return min_z(rebar)  # Tension case
     else:
         return (c - layer_distance) / c * (concrete.ecu / rebar.ey)
 
@@ -291,14 +291,13 @@ def get_zs_from_zero_to_pure_m(bw, h, layer_distances, layer_areas, concrete: ma
 def get_zs_in_tension_region(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     # TODO: need to figure out how to get Pnt in terms of z as z_from_p() doesn't appear to work in tension region.
     z_mmax = get_z_at_pure_m(bw, h, layer_distances, layer_areas, concrete, rebar)
-    z_min = min_z(rebar)
-    
-    point_count = 7
-    # TODO: The following return is a stop-gap, I'd like to have a better way to distribute over the tension region.
-    #return np.append(np.geomspace(z_mmax, (z_min + (z_mmax - z_min) / (point_count)) / 4, point_count), z_min)
-
-    # Basically need to artificially inflate the z_min value in order to get c_min closer to -math.inf
-    return z_min * 100  #
+    c_mmax = c_from_z(z_mmax, max(layer_distances), concrete, rebar)
+    points = 9
+    cs = np.linspace(0, c_mmax, points)
+    zs = np.zeros(points)
+    for i in range(points):
+        zs[i] = z_from_c(cs[i], max(layer_distances), concrete, rebar)
+    return zs
 
 def get_half_zs(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial, 
                 points: int = 10, has_spirals: bool = False, is_ch_10_composite: bool = False):
@@ -306,7 +305,7 @@ def get_half_zs(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMater
                        rebar, points, has_spirals, is_ch_10_composite)
     zs_region_2 = get_zs_from_zero_to_pure_m(bw, h, layer_distances, layer_areas, concrete, rebar)
     zs_tension = get_zs_in_tension_region(bw, h, layer_distances, layer_areas, concrete, rebar)
-    return np.hstack((zs_positive, zs_region_2, zs_tension))
+    return np.sort(np.hstack((zs_positive, zs_region_2, zs_tension)))
     
 def get_half_cs(zs, layer_distance, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     return cs_from_zs(zs, layer_distance, concrete, rebar)
@@ -342,6 +341,13 @@ def get_design_pm_points(cs, bw, h, layer_distances, layer_areas, concrete: mat.
     design_ps = ps * phis
     design_ms = ms * phis
     return design_ps, design_ms
+
+
+
+
+
+
+
 
 
 
