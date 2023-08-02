@@ -297,6 +297,7 @@ def get_zs_in_tension_region(bw, h, layer_distances, layer_areas, concrete: mat.
     zs = np.zeros(points)
     for i in range(points):
         zs[i] = z_from_c(cs[i], max(layer_distances), concrete, rebar)
+    zs = np.insert(zs, 0, min_z(rebar) * 1000)  # This adds a really high point to ensure max Tension
     return zs
 
 def get_half_zs(bw, h, layer_distances, layer_areas, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial, 
