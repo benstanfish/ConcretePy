@@ -1,11 +1,10 @@
 """Library of material-related functions, based on ACI 318 and US customary units (inches, pounds)"""
-__version__ = "0.0.6"
+__version__ = "0.0.7"
 __author__ = "Ben Fisher"
 
 
 import numpy as np
-
-from math import sqrt
+import math
 
 #TODO: Global bar_* variables have been copied to RebarMaterial(), determine if they still need to be global here?
 # Rebar sizes, diameters, areas, weights per ACI 318 Appendix A
@@ -142,79 +141,65 @@ class RebarMaterial(SteelMaterial):
         self.eu = self.ult_strain
         
         
-class ConcreteSection:
-    def __init__(self, widths, heights, concrete: ConcreteMaterial):
-        self.widths = widths
-        self.heights = heights
-        self.material = concrete        
-        
+class ConcreteSection(ConcreteMaterial):
+    def __init__(self, widths_and_heights):
+        super().__init__(fc, lam)
+        self._cross_section = np.array(widths_and_heights)
+        self._region_count = self.get_region_count(widths_and_heights)
+        self.is_valid = self.check_if_valid(self.widths, self.heights)
+    
+    @property
+    def cross_section(self):
+        return self._cross_section
+
+    @cross_section.setter
+    def cross_section(self, new_widths_and_heights):
+        self._cross_section = np.array(new_widths_and_heights)
+
     @property
     def widths(self):
-        return self.widths
-    
-    @widths.setter
-    def widths(self, new_widths):
-        self.widths = new_widths
-        print("New region widths vector set.")
-    
+        return self._cross_section[:,0]
+
     @property
     def heights(self):
-        return self.heights
-    
-    @heights.setter
-    def heights(self, new_heights):
-        self.heights = new_heights
-        print("New region heights vector set.")
-    
+        return self._cross_section[:,1]
+
     @property
-    def material(self):
-        return self.material
-    
-    @material.setter
-    def material(self, new_material):
-        self.material = new_material
-        print(f"New material {new_material} set.")
-    
+    def gross_area(self):
+        if self.is_valid:
+            area = 0
+            for i in range(self.heights.shape[0]):
+                area += self.widths[i] * self.heights[i]
+            return area
+        else:
+            return f"ERROR: cannot calculate area because there are {self.widths.shape[0]} width dimensions, and {self.heights.shape[0]} height dimensions."
+
     @property
-    def max_width(self):
-        # TODO: Develop way to access appropriate width, based on compression block depth
-        return max(self.widths)
+    def gross_centroid(self):
+        if self.is_valid:
+            total_area = self.gross_area
+            total_moment = 0
+            for i in range(self.heights.shape[0]):
+                total_moment += (self.widths[i] * self.heights[i] * (self.get_triangular_sum(self.heights, False)[i] + self.heights[i] / 2))
+            return total_moment / total_area
+        else:
+            return f"ERROR: cannot calculate area because there are {self.widths.shape[0]} width dimensions, and {self.heights.shape[0]} height dimensions."
     
     @property
     def total_height(self):
         return sum(self.heights)
-    
+
     @property
-    def area(self):
-        gross_area = 0
-        for i in range(max(self.widths.shape[0], self.heights.shape[0])):
-            gross_area += self.widths[i] * self.heights[i]
-        return gross_area
-    
+    def max_width(self):
+        return max(self.widths)
+
     @property
-    def centroid(self):
-        # Centroid is measured parallel to the height dimension
-        areas = np.zeros(self.heights.shape[0])
-        centers = np.zeros(self.heights.shape[0])
-        product = np.zeros(self.heights.shape[0])
-        running_height = 0
-        for i in range(self.heights.shape[0]):
-            areas[i] = self.widths[i] * self.heights[i]
-            centers[i] = self.heights[i] / 2 + running_height
-            running_height += self.heights[i]
-            product[i] = areas[i] * centers[i]
-        total_product = sum(product)
-        total_area = sum(areas)
-        return total_product / total_area
-    
-    @property
-    def inertia(self):
-        # Inertia is the moment of inertia measured parallel to the height dimension
+    def gross_inertia(self):
         areas = np.zeros(self.heights.shape[0])
         centers = np.zeros(self.heights.shape[0])
         center_offsets = np.zeros(self.heights.shape[0])
         self_inertias = np.zeros(self.heights.shape[0])
-        total_centroid = self.centroid
+        total_centroid = self.gross_centroid
         running_height = 0
         parallel_axis_terms = np.zeros(self.heights.shape[0])
         for i in range(self.heights.shape[0]):
@@ -225,10 +210,89 @@ class ConcreteSection:
             running_height += self.heights[i]
             parallel_axis_terms[i] = areas[i] * center_offsets[i] ** 2
         return sum(self_inertias) + sum(parallel_axis_terms)
-        
+
     @property
-    def radius_gyration(self):
-        return sqrt(self.inertia / self.area)   
+    def radius_of_gyration(self):
+        return math.sqrt(self.gross_inertia / self.gross_area)
+    
+    def get_region_count(self, widths_and_heights):
+        widths_and_heights = np.array(widths_and_heights)
+        return widths_and_heights.shape[0]
+
+    def append_region(self, additional_regions):
+        new_cross_section = np.append(self._cross_section, additional_regions)
+        new_cross_section.resize(int(new_cross_section.size / 2), 2)
+        self._cross_section = new_cross_section
+        self._region_count = self.get_region_count(self._cross_section)
+
+    def insert_region(self, index, additional_regions):
+        if (index == -1) | (index > self._region_count):
+            self._cross_section = np.vstack((self._cross_section, np.array(additional_regions)))
+        else:
+            new_cross_section = np.insert(self._cross_section, index, additional_regions, axis=0)
+            self._cross_section = new_cross_section
+        self._region_count = self.get_region_count(self._cross_section)
+
+    def delete_region(self, index):
+        if index > self._region_count:
+            index = self._region_count
+        elif index == 0:
+            index = 1
+        if self._region_count != 1:
+            self._cross_section = np.delete(self._cross_section, index - 1, 0)
+            self._region_count = self.get_region_count(self._cross_section)
+        
+    # Cannot make this a property and make net_distance optional
+    def area(self, net_distance = math.inf):
+        if self.is_valid:
+            net_heights = self.get_net_heights(self.heights, net_distance)
+            count = net_heights.shape[0]
+            net_area = 0
+            if count != 0:
+                for i in range(net_heights.shape[0]):
+                    net_area += self.widths[i] * net_heights[i]
+            return net_area
+        else:
+            return f"ERROR: cannot calculate area because there are {self.widths.shape[0]} width dimensions, and {self.heights.shape[0]} height dimensions."
+
+    # Cannot make this a property and make net_distance optional
+    def centroid(self, net_distance = math.inf):
+        if self.is_valid:   
+            net_heights = self.get_net_heights(self.heights, net_distance)
+            net_area = self.area(net_distance)
+            net_moment = 0
+            if net_area != 0:
+                for i in range(net_heights.shape[0]):
+                    net_moment += (self.widths[i] * net_heights[i] * (self.get_triangular_sum(net_heights, False)[i] + net_heights[i] / 2))
+            return net_moment / net_area
+        else:
+            return f"ERROR: cannot calculate centroid because there are {self._widths.shape[0]} width dimensions, and {self._heights.shape[0]} height dimensions."
+
+    def get_width_and_height_arrays(self, cross_section):
+        cross_section = np.array(cross_section)
+        widths = cross_section[:,0]
+        heights = cross_section[:,1]
+        return widths, heights
+        
+    def check_if_valid(self, widths, heights):
+        return True if widths.shape[0] == heights.shape[0] else False
+        
+    def get_net_heights(heights, net_distance = math.inf):
+        lower_bound_heights = self.get_triangular_sum(heights, False)
+        net_heights = np.zeros(heights.shape[0])
+        for i in range(net_heights.shape[0]):
+            net_heights[i] = min(max(0, net_distance - lower_bound_heights[i]), heights[i])
+        return net_heights
+    
+    def get_triangular_sum(a_vector, include_current_index: bool = True):
+        sum_array = np.zeros(a_vector.shape[0])
+        if include_current_index:
+            for i in range(sum_array.shape[0]):
+                sum_array[i] = np.sum(a_vector[0:i + 1])
+        else:
+            for i in range(1, sum_array.shape[0]):
+                sum_array[i] = np.sum(a_vector[0:i])     
+        return sum_array  
     
     
 print(f'{__name__} <version {__version__}> successfully imported')
