@@ -145,7 +145,7 @@ class RebarSet(RebarMaterial):
         super().__init__(fy)
     
         
-class ConcreteSection(ConcreteMaterial):
+class ConcreteColumn(ConcreteMaterial):
     def __init__(self, widths_and_heights):
         super().__init__(fc, lam)
         self._cross_section = np.array(widths_and_heights)
