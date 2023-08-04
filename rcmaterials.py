@@ -140,6 +140,10 @@ class RebarMaterial(SteelMaterial):
         """Reset the ultimate strain value to the original initialized value."""
         self.eu = self.ult_strain
         
+class RebarSet(RebarMaterial):
+    def __init__(self, fy=60000):
+        super().__init__(fy)
+    
         
 class ConcreteSection(ConcreteMaterial):
     def __init__(self, widths_and_heights):
@@ -180,7 +184,7 @@ class ConcreteSection(ConcreteMaterial):
             total_area = self.gross_area
             total_moment = 0
             for i in range(self.heights.shape[0]):
-                total_moment += (self.widths[i] * self.heights[i] * (self.get_triangular_sum(self.heights, False)[i] + self.heights[i] / 2))
+                total_moment += (self.widths[i] * self.heights[i] * (self.sum_cumulative(self.heights, False)[i] + self.heights[i] / 2))
             return total_moment / total_area
         else:
             return f"ERROR: cannot calculate area because there are {self.widths.shape[0]} width dimensions, and {self.heights.shape[0]} height dimensions."
@@ -263,7 +267,7 @@ class ConcreteSection(ConcreteMaterial):
             net_moment = 0
             if net_area != 0:
                 for i in range(net_heights.shape[0]):
-                    net_moment += (self.widths[i] * net_heights[i] * (self.get_triangular_sum(net_heights, False)[i] + net_heights[i] / 2))
+                    net_moment += (self.widths[i] * net_heights[i] * (self.sum_cumulative(net_heights, False)[i] + net_heights[i] / 2))
             return net_moment / net_area
         else:
             return f"ERROR: cannot calculate centroid because there are {self._widths.shape[0]} width dimensions, and {self._heights.shape[0]} height dimensions."
@@ -278,20 +282,20 @@ class ConcreteSection(ConcreteMaterial):
         return True if widths.shape[0] == heights.shape[0] else False
         
     def get_net_heights(heights, net_distance = math.inf):
-        lower_bound_heights = self.get_triangular_sum(heights, False)
+        lower_bound_heights = self.sum_cumulative(heights, False)
         net_heights = np.zeros(heights.shape[0])
         for i in range(net_heights.shape[0]):
             net_heights[i] = min(max(0, net_distance - lower_bound_heights[i]), heights[i])
         return net_heights
     
-    def get_triangular_sum(a_vector, include_current_index: bool = True):
-        sum_array = np.zeros(a_vector.shape[0])
-        if include_current_index:
+    def sum_cumulative(my_data, include_current: bool = True):
+        sum_array = np.zeros(my_data.shape[0])
+        if include_current:
             for i in range(sum_array.shape[0]):
-                sum_array[i] = np.sum(a_vector[0:i + 1])
+                sum_array[i] = np.sum(my_data[0:i + 1])
         else:
             for i in range(1, sum_array.shape[0]):
-                sum_array[i] = np.sum(a_vector[0:i])     
+                sum_array[i] = np.sum(my_data[0:i])     
         return sum_array  
     
     
