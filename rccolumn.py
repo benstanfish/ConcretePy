@@ -80,7 +80,7 @@ def max_z(concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     return concrete.ecu / (rebar.fy / rebar.Es)  # Occurs at maximum (pure) compression, c = inf
 
 def min_z(rebar: mat.RebarMaterial):
-    return rebar.eu / (rebar.fy / rebar.Es)  # Occurs at maximum (pure) tension; c = 0
+    return rebar.ult_strain / (rebar.fy / rebar.Es)  # Occurs at maximum (pure) tension; c = 0
 
 def comp_z(concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     # This is just a wrapper function
@@ -128,7 +128,7 @@ def zs_from_strains(strains, rebar: mat.RebarMaterial):
 
 def strain_from_c(c, layer_distance,  concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     if c == 0:
-        return rebar.eu
+        return rebar.ult_strain
     else:
         return concrete.ecu * (1 - layer_distance / c)
 
@@ -143,7 +143,7 @@ def strain_from_z(z, rebar: mat.RebarMaterial):
 
 def layer_strain(layer_distance, c, concrete: mat.ConcreteMaterial, rebar: mat.RebarMaterial):
     if c == 0:
-        return rebar.eu
+        return rebar.ult_strain
     elif c == math.inf:
         # This case is necessary to prevent returning an "nan" error.
         return concrete.ecu

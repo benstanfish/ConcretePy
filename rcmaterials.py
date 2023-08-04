@@ -8,9 +8,9 @@ import math
 
 #TODO: Global bar_* variables have been copied to RebarMaterial(), determine if they still need to be global here?
 # Rebar sizes, diameters, areas, weights per ACI 318 Appendix A
-bar_numbers = [3, 4, 5, 6, 7, 8, 9, 10, 11, 14, 18]
+ACI_BAR_NUMBERS = [3, 4, 5, 6, 7, 8, 9, 10, 11, 14, 18]
 
-bar_diameters = {
+ACI_BAR_DIAMETERS = {
     3: 0.375,
     4: 0.500,
     5: 0.625,
@@ -24,7 +24,7 @@ bar_diameters = {
     18: 2.257
 }
 
-bar_areas = {
+ACI_BAR_AREAS = {
     3: 0.11,
     4: 0.20,
     5: 0.31,
@@ -38,7 +38,7 @@ bar_areas = {
     18: 4.00
 }
 
-bar_weights = {
+ACI_BAR_WEIGHTS = {
     3: 0.376,
     4: 0.668,
     5: 1.043,
@@ -51,6 +51,10 @@ bar_weights = {
     14: 7.65,
     18: 13.6
 }
+
+ACI_BAR_STANDARDS = {'carbon': 'ASTM A615',
+              'low alloy': 'ASTM 706',
+              'stainless': 'ASTM A995'}
 
 # Material classes
 class ConcreteMaterial:
@@ -72,10 +76,18 @@ class ConcreteMaterial:
             return 0.85 - 0.05 * (self.fc - 4000) / 1000  # ACI 318 Table 22.2.2.4.3 case (b)
 
 class SteelMaterial:
-    def __init__(self, fy = 60000):
-        self.fy = fy  # Minimum specified yield-strength of rebar (psi), user-specified.
-        self.Es = 29000000  # Modulus of elasticity for non-prestressed bars and wires per ACI 318 Sec. 20.2.2.2
-        self.ey = self.fy / self.Es  # Yield strain of the rebar, refer to ACI 318 Sec. R20.2.2.1
+    def __init__(self, fy=60000, standard='ASTM A615', grade='60'):
+        self.standard = standard
+        self.grade = grade
+        self.fy = fy
+        self.Es = 29000000
+        self.ey = self.fy / self.Es
+        # Densities are kg/mm^3 and lb/in^3
+        self.density = {"metric": 0.00000785,
+                        0: 0.00000785,
+                        "imperial": 0.283564815,
+                        1: 0.283564815}
+        
         
 class RebarMaterial(SteelMaterial):
     def __init__(self, fy=60000):
@@ -94,57 +106,34 @@ class RebarMaterial(SteelMaterial):
                             14: 1.693,
                             18: 2.257
                             }   
-        self.bar_areas = {
-                            3: 0.11,
-                            4: 0.20,
-                            5: 0.31,
-                            6: 0.44,
-                            7: 0.60,
-                            8: 0.79,
-                            9: 1.00,
-                            10: 1.27,
-                            11: 1.56,
-                            14: 2.25,
-                            18: 4.00
-                        }
-        self.bar_weights = {
-                            3: 0.376,
-                            4: 0.668,
-                            5: 1.043,
-                            6: 1.503,
-                            7: 2.044,
-                            8: 2.67,
-                            9: 3.4,
-                            10: 4.303,
-                            11: 5.313,
-                            14: 7.65,
-                            18: 13.6
-                        }
-        self.eu = self.ult_strain  # Rebar ultimate strain, defaults to ASTM A615 values.
-        
+        self._ult_strain = self.ult_strain  # Rebar ultimate strain, defaults to ASTM A615 values.
+    
     @property
+    def ult_strain(self):
+        return self._ult_strain
+    
+    @ult_strain.setter
     def ult_strain(self):
         """Ultimate strains associated with ASTM A615 material."""
         if self.fy <= 40000:
-            return -0.155
+            self._ult_strain = -0.155
         elif self.fy <= 60000:
-            return -0.12
+            self._ult_strain = -0.12
         elif self.fy <= 75000:
-            return -0.07
+            self._ult_strain = -0.07
         else:
-            return -0.05  # For more information refer to ASCE 41-17, Sec. 10.3.3.1. 
+            self._ult_strain = -0.05  # For more information refer to ASCE 41-17, Sec. 10.3.3.1. 
                          # For historic rebar lower values may be more appropriate (e.g. 0.02, etc.)
     
     @property
-    def reset_eu(self):
-        """Reset the ultimate strain value to the original initialized value."""
-        self.eu = self.ult_strain
+    def bar_weight(self, bar_number, units = 'imperial'):
+        return round(self.density[units] * self.bar_area(bar_number, units), 3)
         
-class RebarSet(RebarMaterial):
-    def __init__(self, fy=60000):
-        super().__init__(fy)
+    @property
+    def bar_area(self, bar_number):
+        return round(math.pi / 4 * self.bar_diameters[bar_number] ** 2, 3)
     
-        
+      
 class ConcreteColumn(ConcreteMaterial):
     def __init__(self, widths_and_heights):
         super().__init__(fc, lam)
